@@ -30,6 +30,7 @@ def make_map_fn(split: str):
     """
     def process_fn(example: Dict[str, Any], idx: int, dataset_name=None) -> Optional[Dict[str, Any]]:
         question = example.pop('problem')
+        question += "\n\nWrite Python code to solve the problem. Present the code in \n```python\nYour code\n```\nat the end."
         tests = example.pop('tests')
         
         if example.get('metadata', {}):

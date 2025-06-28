@@ -243,7 +243,6 @@ class DataParallelPPOActor(BasePPOActor):
 
                     clip_ratio = self.config.clip_ratio
                     entropy_coeff = self.config.entropy_coeff
-
                     entropy, log_prob = self._forward_micro_batch(micro_batch=data, temperature=temperature)
 
                     pg_loss, pg_clipfrac, ppo_kl = core_algos.compute_policy_loss(old_log_prob=old_log_prob,
@@ -274,7 +273,6 @@ class DataParallelPPOActor(BasePPOActor):
 
                     loss = policy_loss / self.gradient_accumulation
                     loss.backward()
-
                     data = {
                         'actor/entropy_loss': entropy_loss.detach().item(),
                         'actor/pg_loss': pg_loss.detach().item(),

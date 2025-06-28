@@ -174,6 +174,11 @@ def primeintellect_check_correctness(tests, code):
         tests['fn_name'] = fn_name
     return check_correctness(tests, code, taco_run_test)
 
+def _temp_run(sample, generation, debug, result, metadata_list, timeout):
+    res, metadata = lcb_run_test(sample, test=generation, debug=debug, timeout=timeout)
+    result.append(res)
+    metadata_list.append(metadata)
+
 def lcb_check_correctness_v2(sample, generation, timeout=6, debug=False):
     """Check correctness of code generation with a global timeout.
     The global timeout is to catch some extreme/rare cases not handled by the timeouts
@@ -184,12 +189,6 @@ def lcb_check_correctness_v2(sample, generation, timeout=6, debug=False):
     manager = multiprocessing.Manager()
     result = manager.list()
     metadata_list = manager.list()
-
-
-    def _temp_run(sample, generation, debug, result, metadata_list, timeout):
-        res, metadata = lcb_run_test(sample, test=generation, debug=debug, timeout=timeout)
-        result.append(res)
-        metadata_list.append(metadata)
 
     p = multiprocessing.Process(
         target=_temp_run,
@@ -307,6 +306,7 @@ class RewardCodeFn(RewardFn):
         # Tests: List[Dictionary] - Codeforces, LiveCodeBench
         # Tests: Dictionary[Lists] - CodeContests, Taco/Apps
         is_correct = False
+        print("dataset_namedataset_name", dataset_name)
         if dataset_name in ["taco", "apps", "code_contests"]:
             test_fn = taco_run_test
             is_correct = check_correctness(tests, model_code, test_fn)

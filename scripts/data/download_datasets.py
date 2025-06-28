@@ -14,12 +14,12 @@ FILE_IDS = {
 
 # Define the destination paths
 DEST_PATHS = {
-    "train_taco.json": os.path.expanduser("~/rllm/rllm/data/train/code/taco.json"),
-    "olympiad.json": os.path.expanduser("~/rllm/rllm/data/train/math/olympiad.json"),
-    "test_livecodebench.json": os.path.expanduser("~/rllm/rllm/data/test/code/livecodebench.json"),
-    "train_livecodebench.json": os.path.expanduser("~/rllm/rllm/data/train/code/livecodebench.json"),
-    "kodcode.json": os.path.expanduser("~/rllm/rllm/data/train/code/kodcode.json"),
-    "primeintellect.json": os.path.expanduser("~/rllm/rllm/data/train/code/primeintellect.json"),
+    "train_taco.json": os.path.expanduser("/mnt/task_runtime/rllm/rllm/data/train/code/taco.json"),
+    "olympiad.json": os.path.expanduser("/mnt/task_runtime/rllm/rllm/data/train/math/olympiad.json"),
+    "test_livecodebench.json": os.path.expanduser("/mnt/task_runtime/rllm/rllm/data/test/code/livecodebench.json"),
+    "train_livecodebench.json": os.path.expanduser("/mnt/task_runtime/rllm/rllm/data/train/code/livecodebench.json"),
+    "kodcode.json": os.path.expanduser("/mnt/task_runtime/rllm/rllm/data/train/code/kodcode.json"),
+    "primeintellect.json": os.path.expanduser("/mnt/task_runtime/rllm/rllm/data/train/code/primeintellect.json"),
 }
 
 # Create the necessary directories
