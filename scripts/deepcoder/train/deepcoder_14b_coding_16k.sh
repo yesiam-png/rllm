@@ -31,7 +31,7 @@ python3 -m verl.trainer.main_ppo \
     data.train_batch_size=32 \
     data.val_batch_size=512 \
     data.max_prompt_length=2048 \
-    data.max_response_length=8000 \
+    data.max_response_length=12000 \
     actor_rollout_ref.model.path=$MODEL_PATH \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.model.enable_gradient_checkpointing=True \
@@ -65,8 +65,8 @@ python3 -m verl.trainer.main_ppo \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name='deepcoder' \
-    trainer.experiment_name='14b-16k-grpo+-code' \
-    +trainer.val_before_train=False \
+    trainer.experiment_name='3b-12k' \
+    +trainer.val_before_train=True \
     trainer.n_gpus_per_node=8 \
     trainer.nnodes=1 \
     trainer.save_freq=10 \

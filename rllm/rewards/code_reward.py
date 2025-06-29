@@ -67,6 +67,12 @@ def clean_code_main_block(code: str) -> str:
 
     return '\n'.join(filtered_lines)
 
+def evaluate_code(tests, generation, debug, test_results, test_fn, timeout_per_test):
+    """Helper function to run tests in separate process."""
+    try:
+        test_results.append(test_fn(tests, test=generation, debug=debug, timeout=timeout_per_test))
+    except Exception as e:
+        print(f"Error in evaluate_code: {e}")
 
 def check_correctness(tests: Union[List[Dict[str, str]], Dict[str, List[str]]], code: str, test_fn, timeout_per_test: int = 12, max_tests: int = 15) -> bool:
     """
@@ -86,12 +92,7 @@ def check_correctness(tests: Union[List[Dict[str, str]], Dict[str, List[str]]], 
     """
     manager = Manager()
     test_results = manager.list()
-    def evaluate_code(tests, generation, debug, test_results, test_fn):
-        """Helper function to run tests in separate process."""
-        try:
-            test_results.append(test_fn(tests, test=generation, debug=debug, timeout=timeout_per_test))
-        except Exception as e:
-            print(f"Error in evaluate_code: {e}")
+
     if isinstance(tests, list):
         total_tests = len(tests)
         if total_tests > max_tests:
@@ -114,7 +115,7 @@ def check_correctness(tests: Union[List[Dict[str, str]], Dict[str, List[str]]], 
     
     process = multiprocessing.Process(
         target=evaluate_code,
-        args=(tests, code, False, test_results, test_fn)
+        args=(tests, code, False, test_results, test_fn, timeout_per_test)
     )
     process.start()
     process.join()
@@ -306,7 +307,6 @@ class RewardCodeFn(RewardFn):
         # Tests: List[Dictionary] - Codeforces, LiveCodeBench
         # Tests: Dictionary[Lists] - CodeContests, Taco/Apps
         is_correct = False
-        print("dataset_namedataset_name", dataset_name)
         if dataset_name in ["taco", "apps", "code_contests"]:
             test_fn = taco_run_test
             is_correct = check_correctness(tests, model_code, test_fn)

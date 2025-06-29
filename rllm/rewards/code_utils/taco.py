@@ -377,13 +377,14 @@ def execute_std_code(method, synthesized_code, inputs_list, outputs_list, timeou
                                         universal_newlines=True,
                                         timeout=timeout,
                                         text=True)
-                
+                signal.alarm(0)
                 stdout, stderr = result.stdout, result.stderr
                 return_code = result.returncode
                 # result = subprocess.run(['python3', temp_program_path], input=inputs, text=True, capture_output=True, timeout=timeout)
                 exec_code = 999
             except subprocess.TimeoutExpired as e:
                 print(e, temp_file_name)
+                signal.alarm(0)
                 stderr = "TIMEOUT"
                 return_code = -9
                 exec_code = -1
