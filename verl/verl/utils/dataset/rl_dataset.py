@@ -117,10 +117,14 @@ class RLHFDataset(Dataset):
         # filter out too long prompts
         tokenizer = self.tokenizer
         prompt_key = self.prompt_key
-        self.dataframe = self.dataframe[self.dataframe.apply(lambda doc: len(
-            tokenizer.apply_chat_template(doc[prompt_key], add_generation_prompt=True)) <= self.max_prompt_length,
-                                                             axis=1)]
 
+        try:
+            self.dataframe = self.dataframe[self.dataframe.apply(lambda doc: len(
+                tokenizer.apply_chat_template(doc[prompt_key], add_generation_prompt=True)) <= self.max_prompt_length,
+                                                                axis=1)]
+        except Exception as e:
+            self.dataframe = self.dataframe[self.dataframe.apply(lambda doc: len(doc[prompt_key]) <= self.max_prompt_length,
+                                                                axis=1)]
         print(f'filter dataset len: {len(self.dataframe)}')
 
     def __len__(self):
@@ -133,8 +137,10 @@ class RLHFDataset(Dataset):
         row_dict = self.dataframe.iloc[item].to_dict()
 
         chat = row_dict.pop(self.prompt_key)
-
-        prompt_with_chat_template = self.tokenizer.apply_chat_template(chat, add_generation_prompt=True, tokenize=False)
+        try:
+            prompt_with_chat_template = self.tokenizer.apply_chat_template(chat, add_generation_prompt=True, tokenize=False)
+        except Exception as e:
+            prompt_with_chat_template = chat
 
         input_ids, attention_mask = verl_F.tokenize_and_postprocess_data(prompt=prompt_with_chat_template,
                                                                          tokenizer=self.tokenizer,
