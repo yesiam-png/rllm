@@ -27,7 +27,7 @@ fi
 python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
     data.train_files=$HOME/rllm/data/deepcoder_train.parquet \
-    data.val_files=$HOME/rllm/data/test_humanevalplus.parquet \
+    data.val_files=[$HOME/rllm/data/test_humanevalplus.parquet,$HOME/rllm/data/test_livecodebench.parquet] \
     data.train_batch_size=32 \
     data.val_batch_size=512 \
     data.max_prompt_length=2048 \

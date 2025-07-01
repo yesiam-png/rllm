@@ -228,8 +228,8 @@ def leetcode_check_correctness(tests: List[Dict[str, str]], code: str) -> bool:
           bool: True if all tests pass and result list exists, False otherwise
      """
      succ, output = lc_code_exec(code + '\n' + tests["functional"])
-     if not succ:
-         print(f"Error in code execution: {output}")
+   #  if not succ:
+   #      print(f"Error in code execution: {output}")
      return succ
 
 def kodcode_check_correctness(test: str, code: str, timeout_per_test: int = 5) -> bool:
@@ -252,8 +252,8 @@ def kodcode_check_correctness(test: str, code: str, timeout_per_test: int = 5) -
     code = clean_code_main_block(code)
     
     succ, output = kod_code_exec(code, test, timeout_per_test * num_tests)
-    if not succ:
-        print(f"Error in code execution: {output}")
+ #   if not succ:
+ #       print(f"Error in code execution: {output}")
     return succ
 
 def humanevalplus_check_correctness(test: str, code: str, timeout_per_test: int = 1) -> bool:
@@ -273,8 +273,8 @@ def humanevalplus_check_correctness(test: str, code: str, timeout_per_test: int 
 
     num_test_cases = get_num_test_cases(test)
     succ, output = humanevalplus_run_test(code, test, timeout_per_test * num_test_cases)
-    if not succ:
-        print(f"Error in code execution: {output}")
+ #   if not succ:
+ #       print(f"Error in code execution: {output}")
     return succ
 
 class RewardCodeFn(RewardFn):
