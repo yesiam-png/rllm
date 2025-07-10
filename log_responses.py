@@ -64,7 +64,7 @@ def main():
     prompts = dataset1["problem"] + dataset2["problem"]
 
     # List of model checkpoints
-    models = ["USERNAME/Llama-3.2-1B", "USERNAME/code_cpt"
+    models = ["/mnt/task_wrapper/user_output/artifacts/checkpoints/deepcoder/qwencoder3b-12k/actor/global_step_20"#"USERNAME/Llama-3.2-1B", "USERNAME/code_cpt"
       #  "/mnt/task_wrapper/user_output/artifacts/checkpoints/deepcoder/llama1b-cpt-12k/actor/global_step_10",
       #  "/mnt/task_wrapper/user_output/artifacts/checkpoints/deepcoder/llama1b-cpt-12k/actor/global_step_50",
       #  "/mnt/task_wrapper/user_output/artifacts/checkpoints/deepcoder/llama1b-cpt-12k/actor/global_step_70",
@@ -75,8 +75,8 @@ def main():
 
     for model_path in models:
         step = model_path[-8:]#.split("step_")[-1]
-        output_file = f"./log_responses/cpt_{step}_outputs.jsonl"
-        repo_name = f"{USERNAME}/deepcoder-cpt-step-{step}"
+        output_file = f"./log_responses/qwencpt-step20_outputs.jsonl"
+        repo_name = f"{USERNAME}/qwencoder-cpt-step20"
         
         # Run inference and save locally
         run_inference(model_path, prompts, output_file)

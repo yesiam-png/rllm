@@ -130,7 +130,7 @@ def main_task(config):
 
     # instantiate tokenizer
     from verl.utils import hf_tokenizer
-    tokenizer = hf_tokenizer(local_path)
+    tokenizer = hf_tokenizer(local_path, trust_remote_code=True)
 
     # define worker classes
     if config.actor_rollout_ref.actor.strategy == 'fsdp':
