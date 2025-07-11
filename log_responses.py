@@ -5,19 +5,32 @@ from huggingface_hub import HfApi
 import json
 import os
 from tqdm import tqdm
+from rllm.system_prompts import (LCB_FORMATTING_MESSAGE_WITH_STARTER_CODE,
+                               LCB_FORMATTING_WITHOUT_STARTER_CODE,
+                               LCB_SYSTEM_MESSAGE_GENERIC)
 
 def run_inference(model_name, prompts, output_file, max_tokens=22800, temperature=0.0):
     """
     Runs inference for a list of prompts using vLLM, counts response tokens,
     and saves outputs to a JSONL file.
     """
-    engine = LLM(model=model_name)
+    engine = LLM(model=model_name, trust_remote_code=True)
     sampling_params = SamplingParams(temperature=temperature, max_tokens=max_tokens)
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 
     with open(output_file, "w") as f:
         for prompt in tqdm(prompts, desc=f"Inferencing with {model_name}"):
-            chat_prompt = prompt + "\n\nPresent your Python code within \n```python\nYour code\n```\nbelow.\n\n"
+           # chat_prompt = prompt + "\n\nPresent your Python code within \n```python\nYour code\n```\nbelow.\n\n"
+
+
+            chat_prompt = LCB_SYSTEM_MESSAGE_GENERIC + "\n\n" + prompt
+            chat_prompt += f"### Format: {LCB_FORMATTING_WITHOUT_STARTER_CODE}\n"
+            chat_prompt += "```python\n# YOUR CODE HERE\n```\n\n"
+            chat_prompt += f"### Answer: (use the provided format with backticks)\n\n"
+
+           # message = [{"role": "user", "content": chat_prompt}]
+           # chat_prompt = tokenizer.apply_chat_template(message, tokenize=False, add_generation_prompt=True)
+
             outputs = engine.generate(chat_prompt, sampling_params=sampling_params)
             completion = outputs[0].outputs[0].text
             token_ids = tokenizer(completion).input_ids
@@ -64,7 +77,7 @@ def main():
     prompts = dataset1["problem"] + dataset2["problem"]
 
     # List of model checkpoints
-    models = ["/mnt/task_wrapper/user_output/artifacts/checkpoints/deepcoder/qwencoder3b-12k/actor/global_step_20"#"USERNAME/Llama-3.2-1B", "USERNAME/code_cpt"
+    models = ["/mnt/task_runtime/OpenCoder-1.5B-Base-Checkpoints"#"USERNAME/Llama-3.2-1B", "USERNAME/code_cpt"
       #  "/mnt/task_wrapper/user_output/artifacts/checkpoints/deepcoder/llama1b-cpt-12k/actor/global_step_10",
       #  "/mnt/task_wrapper/user_output/artifacts/checkpoints/deepcoder/llama1b-cpt-12k/actor/global_step_50",
       #  "/mnt/task_wrapper/user_output/artifacts/checkpoints/deepcoder/llama1b-cpt-12k/actor/global_step_70",
@@ -75,8 +88,8 @@ def main():
 
     for model_path in models:
         step = model_path[-8:]#.split("step_")[-1]
-        output_file = f"./log_responses/qwencpt-step20_outputs.jsonl"
-        repo_name = f"{USERNAME}/qwencoder-cpt-step20"
+        output_file = f"./log_responses/opencoder-anneal-lcbtemplate.jsonl"
+        repo_name = f"{USERNAME}/opencoder-anneal-lcbtemplate"
         
         # Run inference and save locally
         run_inference(model_path, prompts, output_file)

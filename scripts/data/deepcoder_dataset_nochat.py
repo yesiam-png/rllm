@@ -19,6 +19,10 @@ from rllm.data.dataset_types import TestDataset, TrainDataset
 from rllm.data.utils import load_dataset, fetch_live_code_bench_system_prompt
 from datasets import concatenate_datasets
 
+from rllm.system_prompts import (LCB_FORMATTING_MESSAGE_WITH_STARTER_CODE,
+                               LCB_FORMATTING_WITHOUT_STARTER_CODE,
+                               LCB_SYSTEM_MESSAGE_GENERIC)
+
 def make_map_fn(split: str):
     """Create a mapping function to process dataset examples.
 
@@ -30,7 +34,15 @@ def make_map_fn(split: str):
     """
     def process_fn(example: Dict[str, Any], idx: int, dataset_name=None) -> Optional[Dict[str, Any]]:
         question = example.pop('problem')
-        question += "\n\nPresent your Python code within \n```python\nYour code\n```\nbelow.\n\n"
+
+
+        question = LCB_SYSTEM_MESSAGE_GENERIC + "\n\n" + question
+        question += f"### Format: {LCB_FORMATTING_WITHOUT_STARTER_CODE}\n"
+        question += "```python\n# YOUR CODE HERE\n```\n\n"
+        question += f"### Answer: (use the provided format with backticks)\n\n"
+
+
+       # question += "\n\nPresent your Python code within \n```python\nYour code\n```\nbelow.\n\n"
         tests = example.pop('tests')
         
         if example.get('metadata', {}):
