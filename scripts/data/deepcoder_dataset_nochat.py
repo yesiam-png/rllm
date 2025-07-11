@@ -35,13 +35,6 @@ def make_map_fn(split: str):
     def process_fn(example: Dict[str, Any], idx: int, dataset_name=None) -> Optional[Dict[str, Any]]:
         question = example.pop('problem')
 
-
-        question = LCB_SYSTEM_MESSAGE_GENERIC + "\n\n" + question
-        question += f"### Format: {LCB_FORMATTING_WITHOUT_STARTER_CODE}\n"
-        question += "```python\n# YOUR CODE HERE\n```\n\n"
-        question += f"### Answer: (use the provided format with backticks)\n\n"
-
-
        # question += "\n\nPresent your Python code within \n```python\nYour code\n```\nbelow.\n\n"
         tests = example.pop('tests')
         
@@ -59,6 +52,11 @@ def make_map_fn(split: str):
         if dataset_name == "livecodebench":
             starter_code = example.get("starter_code", None)
             question = fetch_live_code_bench_system_prompt(question, starter_code)
+        else:
+            question = LCB_SYSTEM_MESSAGE_GENERIC + "\n\n" + question
+            question += f"### Format: {LCB_FORMATTING_WITHOUT_STARTER_CODE}\n"
+            question += "```python\n# YOUR CODE HERE\n```\n\n"
+            question += f"### Answer: (use the provided format with backticks)\n\n"
         if isinstance(question, dict):
             question = json.dumps(question)
         data = {
