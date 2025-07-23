@@ -630,7 +630,8 @@ def stripped_string_compare(s1, s2):
                     if not np.isclose(sub_s1_float, sub_s2_float):
                         return False
                 except Exception as e:
-                    pass
+                    return False
+                    #pass
     return True
 
 def reliability_guard(maximum_memory_bytes=4 * 1024 * 1024 * 1024):
