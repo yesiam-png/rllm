@@ -11,7 +11,7 @@ from rllm.rewards.code_utils.utils import BASE_IMPORTS
 CLI_ARG_SIZE_LIMIT = 1024 * 3
 
 _ERROR_MSG_PREFIX = "Failed to execute program: "
-_DEFAULT_TIMEOUT_SECONDS = 30
+_DEFAULT_TIMEOUT_SECONDS = 20
 
 
 def code_exec(code, test: str = None, timeout=_DEFAULT_TIMEOUT_SECONDS):
