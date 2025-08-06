@@ -223,6 +223,17 @@ class vLLMRollout(BaseRollout):
         response = output[0].to(idx.device)
         log_probs = output[1].to(idx.device)
 
+        #from transformers import AutoTokenizer
+        #tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-Coder-3B", trust_remote_code=True)
+       # print("idx", tokenizer.decode(idx[0].tolist(), skip_special_tokens=True), 'eoidx')
+       # print("idx2", tokenizer.decode(idx[1].tolist(), skip_special_tokens=True), 'eoidx2')
+        #print("idx3", tokenizer.decode(idx[2].tolist(), skip_special_tokens=False), 'eoidx3')
+        #print("idx4", tokenizer.decode(idx[3].tolist(), skip_special_tokens=False), 'eoidx4')
+
+        #print("response", tokenizer.decode(response[0].tolist()), 'eor')
+
+        #print("response3", tokenizer.decode(response[2].tolist()), 'eor3')
+        #print("response4", tokenizer.decode(response[3].tolist()), 'eor4')
         # Pad sequences if needed
         if response.shape[1] < self.config.response_length:
             response = pad_sequence_to_length(
