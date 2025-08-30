@@ -8,7 +8,7 @@ setup(
     packages=find_packages(include=['rllm',]),
     install_requires=[
         'torch==2.4.0',
-        'deepspeed',
+        'deepspeed==0.17.4',
         'dm-tree',
         'gdown',
         'google-cloud-aiplatform',

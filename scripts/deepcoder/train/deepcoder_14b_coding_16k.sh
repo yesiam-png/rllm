@@ -20,7 +20,7 @@ done
 
 # Set default model path if not provided
 if [ -z "$MODEL_PATH" ]; then
-    MODEL_PATH="Qwen/Qwen2.5-1.5"
+    MODEL_PATH="Qwen/Qwen2.5-1.5B"
 fi
 
 # Train over 4 nodes, 8 A100-80GB GPUs per node.
