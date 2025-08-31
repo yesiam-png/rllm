@@ -27,7 +27,7 @@ fi
 python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
     data.train_files=$HOME/rllm/data/deepcoder_train.parquet \
-    data.val_files=[$HOME/rllm/data/test_codeforces.parquet,$HOME/rllm/data/test_livecodebench.json,$HOME/rllm/data/test_humanevalplus.parquet] \
+    data.val_files=[$HOME/rllm/data/test_codeforces.parquet,$HOME/rllm/data/test_livecodebench.parquet,$HOME/rllm/data/test_humanevalplus.parquet] \
     data.train_batch_size=128 \
     data.val_batch_size=512 \
     data.max_prompt_length=2048 \
@@ -57,19 +57,19 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.temperature=0.6 \
     actor_rollout_ref.rollout.val_temperature=0.6 \
     actor_rollout_ref.rollout.gpu_memory_utilization=0.8 \
-    actor_rollout_ref.rollout.n=8 \
+    actor_rollout_ref.rollout.n=5 \
     actor_rollout_ref.rollout.n_val=2 \
     actor_rollout_ref.ref.fsdp_config.param_offload=True \
     algorithm.kl_ctrl.kl_coef=0.001 \
     algorithm.mask_truncated_samples=True \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
-    trainer.project_name='rlvr-aug30' \
+    trainer.project_name='rlvr-aug32' \
     trainer.experiment_name='rl-3k-qwen15b' \
-    +trainer.val_before_train=True \
+    +trainer.val_before_train=False \
     trainer.n_gpus_per_node=8 \
     trainer.nnodes=1 \
-    trainer.save_freq=10 \
+    trainer.save_freq=30 \
     trainer.test_freq=10 \
     trainer.default_hdfs_dir=null \
     trainer.total_epochs=100 "${@:1}"
