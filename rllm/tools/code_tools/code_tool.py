@@ -49,7 +49,7 @@ class CodeTool(Tool):
                         "timeout": {
                             "type": "integer",
                             "description": "Maximum execution time in seconds before timing out",
-                            "default": 12,
+                            "default": 2,
                         }
                     },
                     "required": ["code"],
@@ -58,7 +58,7 @@ class CodeTool(Tool):
         }
 
     @abstractmethod
-    def forward(self, code: str, timeout: int = 12, **kwargs) -> CodeToolOutput:
+    def forward(self, code: str, timeout: int = 2, **kwargs) -> CodeToolOutput:
         """
         Execute Python code in the sandbox environment.
         

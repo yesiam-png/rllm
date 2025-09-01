@@ -41,7 +41,7 @@ class PythonInterpreter(CodeTool):
                         "timeout": {
                             "type": "integer",
                             "description": "Maximum execution time in seconds before timing out",
-                            "default": 12
+                            "default": 2
                         }
                     },
                     "required": ["code"],
@@ -49,7 +49,7 @@ class PythonInterpreter(CodeTool):
             },
         }
 
-    def forward(self, code: str, timeout: int = 12) -> CodeToolOutput:
+    def forward(self, code: str, timeout: int = 2) -> CodeToolOutput:
         """
         Synchronous implementation of Python code execution in a sandbox.
         Uses the process pool for isolation but blocks until completion.

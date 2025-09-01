@@ -20,7 +20,7 @@ done
 
 # Set default model path if not provided
 if [ -z "$MODEL_PATH" ]; then
-    MODEL_PATH="Qwen/Qwen2.5-1.5B"
+    MODEL_PATH="/mnt/task_runtime/openandsyn-qwen-ntponly/global_step_2000/actor/huggingface"
 fi
 
 # Train over 4 nodes, 8 A100-80GB GPUs per node.
@@ -40,11 +40,11 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.actor.ppo_micro_batch_size=16 \
     actor_rollout_ref.actor.ppo_epochs=1 \
     actor_rollout_ref.actor.use_dynamic_bsz=True \
-    actor_rollout_ref.actor.ppo_max_token_len_per_gpu=20000 \
+    actor_rollout_ref.actor.ppo_max_token_len_per_gpu=20480 \
     actor_rollout_ref.actor.use_kl_loss=False \
     actor_rollout_ref.actor.kl_loss_coef=0 \
     actor_rollout_ref.actor.kl_loss_type=low_var_kl \
-    actor_rollout_ref.actor.ulysses_sequence_parallel_size=2 \
+    actor_rollout_ref.actor.ulysses_sequence_parallel_size=1 \
     actor_rollout_ref.actor.entropy_coeff=0 \
     actor_rollout_ref.actor.grad_clip=1.0 \
     actor_rollout_ref.actor.clip_ratio_low=0.2 \
@@ -52,12 +52,12 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.actor.fsdp_config.param_offload=False \
     actor_rollout_ref.actor.fsdp_config.optimizer_offload=False \
     actor_rollout_ref.rollout.compute_reward=True \
-    actor_rollout_ref.rollout.tensor_model_parallel_size=2 \
+    actor_rollout_ref.rollout.tensor_model_parallel_size=1 \
     actor_rollout_ref.rollout.name=vllm \
     actor_rollout_ref.rollout.temperature=0.6 \
     actor_rollout_ref.rollout.val_temperature=0.6 \
-    actor_rollout_ref.rollout.gpu_memory_utilization=0.8 \
-    actor_rollout_ref.rollout.n=5 \
+    actor_rollout_ref.rollout.gpu_memory_utilization=0.9 \
+    actor_rollout_ref.rollout.n=4 \
     actor_rollout_ref.rollout.n_val=2 \
     actor_rollout_ref.ref.fsdp_config.param_offload=True \
     algorithm.kl_ctrl.kl_coef=0.001 \
@@ -65,11 +65,11 @@ python3 -m verl.trainer.main_ppo \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name='rlvr-aug311' \
-    trainer.experiment_name='rl-3k-qwen15b' \
-    +trainer.val_before_train=True \
+    trainer.experiment_name='rl-3k-qwen-ntp-step2000-timeout2-pp1' \
+    +trainer.val_before_train=False \
     trainer.n_gpus_per_node=8 \
     trainer.nnodes=1 \
-    trainer.save_freq=30 \
+    trainer.save_freq=10 \
     trainer.test_freq=10 \
     trainer.default_hdfs_dir=null \
     trainer.total_epochs=100 "${@:1}"

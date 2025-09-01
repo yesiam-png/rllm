@@ -74,7 +74,7 @@ def evaluate_code(tests, generation, debug, test_results, test_fn, timeout_per_t
     except Exception as e:
         print(f"Error in evaluate_code: {e}")
 
-def check_correctness(tests: Union[List[Dict[str, str]], Dict[str, List[str]]], code: str, test_fn, timeout_per_test: int = 12, max_tests: int = 15) -> bool:
+def check_correctness(tests: Union[List[Dict[str, str]], Dict[str, List[str]]], code: str, test_fn, timeout_per_test: int = 2, max_tests: int = 15) -> bool:
     """
     Check if generated code passes all test cases within a timeout period.
 

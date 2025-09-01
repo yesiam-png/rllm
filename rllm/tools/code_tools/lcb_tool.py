@@ -183,7 +183,7 @@ class LCBPythonInterpreter(CodeTool):
             n_sandboxes=-1,
         )
 
-    def forward(self, code: str, timeout: int = 12) -> CodeToolOutput:
+    def forward(self, code: str, timeout: int = 2) -> CodeToolOutput:
         """
         Execute Python code using the LiveCodeBench sandbox environment.
         
