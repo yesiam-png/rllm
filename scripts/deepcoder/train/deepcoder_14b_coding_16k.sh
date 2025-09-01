@@ -20,7 +20,7 @@ done
 
 # Set default model path if not provided
 if [ -z "$MODEL_PATH" ]; then
-    MODEL_PATH="/mnt/task_runtime/openandsyn-qwen-ntponly/global_step_2000/actor/huggingface"
+    MODEL_PATH="/mnt/task_runtime/40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400"
 fi
 
 # Train over 4 nodes, 8 A100-80GB GPUs per node.
@@ -40,7 +40,7 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.actor.ppo_micro_batch_size=16 \
     actor_rollout_ref.actor.ppo_epochs=1 \
     actor_rollout_ref.actor.use_dynamic_bsz=True \
-    actor_rollout_ref.actor.ppo_max_token_len_per_gpu=20480 \
+    actor_rollout_ref.actor.ppo_max_token_len_per_gpu=32000 \
     actor_rollout_ref.actor.use_kl_loss=False \
     actor_rollout_ref.actor.kl_loss_coef=0 \
     actor_rollout_ref.actor.kl_loss_type=low_var_kl \
@@ -65,8 +65,8 @@ python3 -m verl.trainer.main_ppo \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name='rlvr-aug311' \
-    trainer.experiment_name='rl-3k-qwen-ntp-step2000-timeout2-pp1' \
-    +trainer.val_before_train=False \
+    trainer.experiment_name='rl-40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400' \
+    +trainer.val_before_train=True \
     trainer.n_gpus_per_node=8 \
     trainer.nnodes=1 \
     trainer.save_freq=10 \
