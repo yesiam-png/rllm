@@ -49,6 +49,7 @@ def make_map_fn(split: str):
         
         tests = json.dumps(tests)
 
+        """
         if dataset_name == "livecodebench":
             starter_code = example.get("starter_code", None)
             question = fetch_live_code_bench_system_prompt(question, starter_code)
@@ -57,6 +58,12 @@ def make_map_fn(split: str):
             question += f"### Format: {LCB_FORMATTING_WITHOUT_STARTER_CODE}\n"
             question += "```python\n# YOUR CODE HERE\n```\n\n"
             question += f"### Answer: (use the provided format with backticks)\n\n"
+        """
+        if example.get("starter_code", "").strip() != "":
+            question = question + "\n\n" + example["starter_code"].strip() + "\n"
+        else:
+            question = question + "\n\n" + "def solve():" + "\n"
+
         if isinstance(question, dict):
             question = json.dumps(question)
         data = {

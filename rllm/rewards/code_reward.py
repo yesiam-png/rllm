@@ -33,6 +33,7 @@ def extract_code_from_model(model_response: str):
     Returns:
         str: The extracted code, or an empty string if no code block is found.
     """
+    print("debugmodel_response", model_response, "endddd")
     code_blocks = re.findall(r"```(?:\w+)?\n(.*?)```", model_response, re.DOTALL)
     if not code_blocks:
         return None
