@@ -17,7 +17,7 @@
 from rllm.rewards.rl_reward import rllm_reward_fn
 import json 
 
-def _default_compute_score(data_source, solution_str, ground_truth, extra_info=None):
+def _default_compute_score(data_source, solution_str, ground_truth, response_only, extra_info=None):
     if data_source == 'openai/gsm8k':
         from . import gsm8k
         res = gsm8k.compute_score(solution_str, ground_truth)
@@ -31,7 +31,7 @@ def _default_compute_score(data_source, solution_str, ground_truth, extra_info=N
         from . import prime_math
         res = prime_math.compute_score(solution_str, ground_truth)
     else:
-        return rllm_reward_fn(data_source, solution_str, ground_truth)
+        return rllm_reward_fn(data_source, solution_str, ground_truth, response_only)
 
     if isinstance(res, (int, float, bool)):
         return float(res)

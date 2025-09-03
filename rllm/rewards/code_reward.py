@@ -23,7 +23,7 @@ from rllm.rewards.code_utils.kodcode import code_exec as kod_code_exec
 from rllm.rewards.reward_types import RewardConfig, RewardFn, RewardInput, RewardOutput, RewardType
 
 
-def extract_code_from_model(model_response: str):
+def extract_code_from_model(model_response: str, response_only: str):
     """
     Extracts the code from a Markdown-style code block in an LLM output.
 
@@ -33,11 +33,15 @@ def extract_code_from_model(model_response: str):
     Returns:
         str: The extracted code, or an empty string if no code block is found.
     """
-    print("debugmodel_response", model_response, "endddd")
-    code_blocks = re.findall(r"```(?:\w+)?\n(.*?)```", model_response, re.DOTALL)
-    if not code_blocks:
-        return None
-    return code_blocks[-1].strip()
+    print("response_only", response_only)
+    print("all_input", model_response)
+    print("prompttttly.", model_response.replace(response_only, "").strip())
+    return model_response.strip()
+    #code_blocks = re.findall(r"```(?:\w+)?\n(.*?)```", model_response, re.DOTALL)
+    #if not code_blocks:
+    #    return None
+    #print("code_blocks", code_blocks[-1].strip())
+    #return code_blocks[-1].strip()
 
 
 def clean_code_main_block(code: str) -> str:
@@ -300,7 +304,7 @@ class RewardCodeFn(RewardFn):
             print("No tests found in metadata")
             return RewardOutput(reward=self.config.format_error_reward, is_correct=False)
 
-        model_code = extract_code_from_model(model_response)
+        model_code = extract_code_from_model(model_response, input.problem)
         if model_code is None:
             # print("No code found in model response")
             return RewardOutput(reward=self.config.format_error_reward, is_correct=False)
@@ -335,7 +339,7 @@ class RewardCodeFn(RewardFn):
         else:
             return RewardOutput(reward=self.config.incorrect_reward, is_correct=False)
 
-def rllm_reward_fn_code(data_source: str, llm_solution: str, ground_truth: Dict, **kwargs):
+def rllm_reward_fn_code(data_source: str, llm_solution: str, ground_truth: Dict, response_only: str, **kwargs):
     """Evaluate code solutions against ground truth ansters
     
     This function creates a reward function to evaluate code solutions by pass the test_case from groun_truth. It can optionally use a language model
@@ -376,7 +380,7 @@ if __name__ == "__main__":
     reward_fn = RewardCodeFn(reward_config)
     reward_response = reward_fn(
         RewardInput(
-            problem=None,
+            problem=response_only,#None,
             problem_type=RewardType.CODE,
             data_source=data_source,
             model_response=llm_solution,

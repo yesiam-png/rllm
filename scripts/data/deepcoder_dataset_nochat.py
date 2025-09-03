@@ -72,7 +72,8 @@ def make_map_fn(split: str):
             "ability": "code",
             "reward_model": {
                 "style": "rule",
-                "ground_truth": tests
+                "ground_truth": tests,
+                "starter_code": example.get("starter_code", "").strip(),
             },
             "extra_info": {
                 'split': split,

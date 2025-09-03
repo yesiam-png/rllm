@@ -31,10 +31,8 @@ def _select_rm_score_fn(data_source):
     else:
         return rllm_reward_fn
 
-
+"""
 class RewardManager():
-    """The reward manager.
-    """
 
     def __init__(self, tokenizer, num_examine) -> None:
         self.tokenizer = tokenizer
@@ -73,12 +71,15 @@ class RewardManager():
             sequences = torch.cat((valid_prompt_ids, valid_response_ids))
             sequences_str = self.tokenizer.decode(sequences)
 
+            prompt_only = self.tokenizer.decode(valid_prompt_ids)
+            llm_response = self.tokenizer.decode(valid_response_ids)
+
             ground_truth = data_item.non_tensor_batch['reward_model']['ground_truth']
 
             # select rm_score
             data_source = data_item.non_tensor_batch['data_source']
             compute_score_fn = _select_rm_score_fn(data_source)
-            score = compute_score_fn(data_source=data_source, llm_solution=sequences_str, ground_truth=ground_truth)
+            score = compute_score_fn(data_source=data_source, llm_solution=llm_response, ground_truth=ground_truth, prompt_only=prompt_only)  # llm_solution=sequences_str
             
             # with print_lock:
             #     if data_source not in already_print_data_sources:
@@ -99,7 +100,7 @@ class RewardManager():
             reward_tensor[i, valid_response_length - 1] = score
 
         return reward_tensor
-
+"""
 
 import ray
 import hydra

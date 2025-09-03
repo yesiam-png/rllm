@@ -61,6 +61,12 @@ class NaiveRewardManager:
             sequences = torch.cat((valid_prompt_ids, valid_response_ids))
             sequences_str = self.tokenizer.decode(sequences)
 
+            response_only = self.tokenizer.decode(valid_response_ids)
+            starter_code = data_item.non_tensor_batch['reward_model']['starter_code']
+            if starter_code == "":
+                starter_code = "def solve():"
+            response_only = starter_code + "\n" + response_only
+
             ground_truth = data_item.non_tensor_batch['reward_model']['ground_truth']
             # select rm_score
             data_source = data_item.non_tensor_batch['data_source']
@@ -70,6 +76,7 @@ class NaiveRewardManager:
                 data_source=data_source,
                 solution_str=sequences_str,
                 ground_truth=ground_truth,
+                response_only=response_only,
                 extra_info=extra_info,
             )
             
