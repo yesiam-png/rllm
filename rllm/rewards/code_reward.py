@@ -34,9 +34,7 @@ def extract_code_from_model(model_response: str, response_only: str):
         str: The extracted code, or an empty string if no code block is found.
     """
     print("response_only", response_only)
-    print("all_input", model_response)
-    print("prompttttly.", model_response.replace(response_only, "").strip())
-    return model_response.strip()
+    return response_only.strip()
     #code_blocks = re.findall(r"```(?:\w+)?\n(.*?)```", model_response, re.DOTALL)
     #if not code_blocks:
     #    return None

@@ -120,11 +120,12 @@ class vLLMRollout(BaseRollout):
             n=1,
             logprobs=1,  # can be set to 0 and let actor to recompute
             max_tokens=config.response_length,
+            stop=["\nclass", "\nassert", '\n"""', "\nprint", "\nif", "\n<|/", "\n```", "\n#", "\ndef", "\nfor", "\nwhile", "\n@", "\nExample", "\n-", "\n```"]
         )
 
         # we may detokenize the result all together later
         if vllm_version in ('0.4.2', '0.5.4', '0.6.3'):
-            kwargs['detokenize'] = False
+            kwargs['detokenize'] = True #False
 
         # supporting adding any sampling params from the config file
         for k in config.keys():
@@ -222,18 +223,6 @@ class vLLMRollout(BaseRollout):
         # Process outputs
         response = output[0].to(idx.device)
         log_probs = output[1].to(idx.device)
-
-        #from transformers import AutoTokenizer
-        #tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-Coder-3B", trust_remote_code=True)
-       # print("idx", tokenizer.decode(idx[0].tolist(), skip_special_tokens=True), 'eoidx')
-       # print("idx2", tokenizer.decode(idx[1].tolist(), skip_special_tokens=True), 'eoidx2')
-        #print("idx3", tokenizer.decode(idx[2].tolist(), skip_special_tokens=False), 'eoidx3')
-        #print("idx4", tokenizer.decode(idx[3].tolist(), skip_special_tokens=False), 'eoidx4')
-
-        #print("response", tokenizer.decode(response[0].tolist()), 'eor')
-
-        #print("response3", tokenizer.decode(response[2].tolist()), 'eor3')
-        #print("response4", tokenizer.decode(response[3].tolist()), 'eor4')
         # Pad sequences if needed
         if response.shape[1] < self.config.response_length:
             response = pad_sequence_to_length(
