@@ -39,7 +39,6 @@ class RewardManager():
         self.num_examine = num_examine  # the number of batches of decoded responses to print to the console
 
     def __call__(self, data: DataProto):
-        """We will expand this function gradually based on the available datasets"""
 
         # If there is rm score, we directly return rm score. Otherwise, we compute via rm_score_fn
         if 'rm_scores' in data.batch.keys():
