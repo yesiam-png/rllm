@@ -71,7 +71,7 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
     if test(generated_code) is not None it'll try to run the code.
     otherwise it'll just return an input and output pair.
     """
-    print("testssss", test)
+   # print("testssss", test)
 
     test = f"{BASE_IMPORTS}\n{test}"
     if isinstance(in_outs, str):
@@ -88,7 +88,7 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
         else:
             which_type = CODE_TYPE.call_based  # Call-based
             method_name = in_outs["fn_name"]
-        print("method_namemethod_name", method_name)
+            print("method_namemethod_name", method_name)
     inputs_list = []
     outputs_list = []
     for index, inputs in enumerate(in_outs["inputs"]):
@@ -107,11 +107,11 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
             print(f"loading test code = {datetime.now().time()}")
         if which_type == CODE_TYPE.call_based:
             synthesized_code = synthesize_cb_code(test, debug)
-            print("synthesized_code", synthesized_code, which_type)
+         #   print("synthesized_code", synthesized_code, which_type)
             method_func = compile_and_get_func(synthesized_code, which_type, method_name, timeout=timeout, debug=debug)
         elif which_type == CODE_TYPE.standard_input:
             synthesized_code, exec_code = synthesize_std_code(test, debug)
-            print("synthesized_code", synthesized_code, which_type)
+          #  print("synthesized_code", synthesized_code, which_type)
             method_func = compile_and_get_func(synthesized_code, which_type, method_name, timeout=timeout, debug=debug)
         if not method_func:
             results.append(-2)
@@ -202,13 +202,15 @@ def synthesize_cb_code(raw_code, debug=False):
     if debug:
         print(f"loading test code = {datetime.now().time()}")
     sol += raw_code
+    print("synthesize_cb_code", raw_code)
     return sol
 
 def synthesize_std_code(raw_code, debug=False):
     normal_import_lines = "import sys\nimport time\nimport itertools\nfrom itertools import accumulate, product, permutations, combinations\nimport collections\nfrom collections import Counter, OrderedDict, deque, defaultdict, ChainMap\nfrom functools import lru_cache\nimport math\nfrom math import sqrt, sin, cos, tan, ceil, fabs, floor, gcd, exp, log, log2\nimport fractions\nfrom typing import List, Tuple\nimport numpy as np\nimport random\nimport heapq\nfrom heapq import *\n"
     if debug:
         print(f"loading test code = {datetime.now().time()}")
-    
+    #print("synthesize_std_code", raw_code)
+
     sol = "" # code for compile
     sol2 = "" # code for execute
 
