@@ -120,7 +120,7 @@ class vLLMRollout(BaseRollout):
             n=1,
             logprobs=1,  # can be set to 0 and let actor to recompute
             max_tokens=config.response_length,
-            stop=["\nclass", "\nassert", '\n"""', "\nprint", "\nif", "\n<|/", "\n```", "\n#", "\ndef", "\nfor", "\nwhile", "\n@", "\nExample", "\n-", "\n```"]
+            stop=["\nclass", "\nassert", '\n"""', "\nprint", "\nif", "\n<|/", "\n```", "\n#", "\ndef", "\nfor", "\nwhile", "\n@", "\nExample", "\n-", "\n```", "\nsolve"]
         )
 
         # we may detokenize the result all together later

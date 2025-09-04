@@ -72,6 +72,7 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
     otherwise it'll just return an input and output pair.
     """
     test = f"{BASE_IMPORTS}\n{test}"
+    print("testssss", test)
     if isinstance(in_outs, str):
         try:
             in_outs =  ast.literal_eval(in_outs)
@@ -86,6 +87,7 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
         else:
             which_type = CODE_TYPE.call_based  # Call-based
             method_name = in_outs["fn_name"]
+        print("method_namemethod_name", method_name)
     inputs_list = []
     outputs_list = []
     for index, inputs in enumerate(in_outs["inputs"]):
@@ -120,7 +122,9 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
                 detail_results = {k:v for k, v in detail_results.items() if k!='debug'}
                 if set(detail_results.values()) == {(False, 'returncode:1')}:
                     synthesized_code, exec_code = synthesize_std_code(test, debug)
-                    detail_results = execute_std_code(method_func, synthesized_code+'\ncode()\n', inputs_list, outputs_list, timeout=timeout, early_stop=True, debug=debug)
+                    if '\nsolve()' not in synthesized_code:
+                        synthesized_code = synthesized_code + '\nsolve()\n'
+                    detail_results = execute_std_code(method_func, synthesized_code, inputs_list, outputs_list, timeout=timeout, early_stop=True, debug=debug) # +'\nsolve()\n'
         if isinstance(detail_results, list):
             if len(detail_results) == 1:
                 detail_results = detail_results * len(inputs_list)
@@ -134,6 +138,7 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
                 results.append(-1)
             else:
                 results.append(-3)
+        print("synthesized_code", synthesized_code, which_type)
         return results
 
 def process_input_output(inputs, outputs):
@@ -233,7 +238,7 @@ def synthesize_std_code(raw_code, debug=False):
             sol += normal_import_lines
             sol += special_import_lines
             sol += "\nstdin = sys.stdin\nstdout = sys.stdout\n"
-            sol += "def code():\n"
+           # sol += "def code():\n"
             sol += f"\t{i}\n"
             started = True
         else:
