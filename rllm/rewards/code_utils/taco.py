@@ -71,8 +71,9 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
     if test(generated_code) is not None it'll try to run the code.
     otherwise it'll just return an input and output pair.
     """
-    test = f"{BASE_IMPORTS}\n{test}"
     print("testssss", test)
+
+    test = f"{BASE_IMPORTS}\n{test}"
     if isinstance(in_outs, str):
         try:
             in_outs =  ast.literal_eval(in_outs)
@@ -106,9 +107,11 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
             print(f"loading test code = {datetime.now().time()}")
         if which_type == CODE_TYPE.call_based:
             synthesized_code = synthesize_cb_code(test, debug)
+            print("synthesized_code", synthesized_code, which_type)
             method_func = compile_and_get_func(synthesized_code, which_type, method_name, timeout=timeout, debug=debug)
         elif which_type == CODE_TYPE.standard_input:
             synthesized_code, exec_code = synthesize_std_code(test, debug)
+            print("synthesized_code", synthesized_code, which_type)
             method_func = compile_and_get_func(synthesized_code, which_type, method_name, timeout=timeout, debug=debug)
         if not method_func:
             results.append(-2)
@@ -138,7 +141,6 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
                 results.append(-1)
             else:
                 results.append(-3)
-        print("synthesized_code", synthesized_code, which_type)
         return results
 
 def process_input_output(inputs, outputs):
