@@ -82,7 +82,7 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
             print(f"run_tests app/taco, Error parsing string: {e}")
             return []
     if in_outs:
-        if in_outs.get("fn_name") is None:
+        if in_outs.get("fn_name") is None or n_outs.get("fn_name") == "null":
             which_type = CODE_TYPE.standard_input  # Standard input
             method_name = None
         else:

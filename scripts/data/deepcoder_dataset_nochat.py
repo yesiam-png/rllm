@@ -59,9 +59,12 @@ def make_map_fn(split: str):
             question += "```python\n# YOUR CODE HERE\n```\n\n"
             question += f"### Answer: (use the provided format with backticks)\n\n"
         """
+       # if tests["fn_name"] is None or tests["fn_name"] == "null":
+       #     assert example.get("starter_code", "").strip() == ""
         if example.get("starter_code", "").strip() != "":
             question = question + "\n\n" + example["starter_code"].strip() + "\n"
         else:
+        #    assert tests["fn_name"] is None or tests["fn_name"] == "null"
             question = question + "\n\n" + "def solve():" + "\n"
 
         if isinstance(question, dict):
