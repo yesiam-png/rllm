@@ -78,7 +78,7 @@ class RewardManager():
             # select rm_score
             data_source = data_item.non_tensor_batch['data_source']
             compute_score_fn = _select_rm_score_fn(data_source)
-            score = compute_score_fn(data_source=data_source, llm_solution=llm_response, ground_truth=ground_truth, prompt_only=prompt_only)  # llm_solution=sequences_str
+            score = compute_score_fn(data_source=data_source, llm_solution=sequences_str, ground_truth=ground_truth, response_only=llm_response)  # llm_solution=sequences_str
             
             # with print_lock:
             #     if data_source not in already_print_data_sources:

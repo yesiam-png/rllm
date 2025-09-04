@@ -50,9 +50,8 @@ def extract_code_from_model(model_response: str, response_only: str):
     stop=["\nclass", "\nassert", '\n"""', "\nprint", "\nif", "\n<|/", "\n```", "\n#", "\ndef", "\nfor", "\nwhile", "\n@", "\nExample", "\n-", "\n```", "\nsolve"]
     #print("response_only", response_only)
     response_only = trim_after_stop(response_only, stop)
-    print("model_response", model_response, "allids")
 
-    #print("afterremove", response_only)
+    print("afterremove", response_only)
    # if '\nsolve()' not in response_only:
    #     response_only += '\nsolve()'
     return response_only.strip()
