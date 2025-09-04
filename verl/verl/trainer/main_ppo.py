@@ -31,7 +31,7 @@ def _select_rm_score_fn(data_source):
     else:
         return rllm_reward_fn
 
-"""
+#"""
 class RewardManager():
 
     def __init__(self, tokenizer, num_examine) -> None:
@@ -99,7 +99,7 @@ class RewardManager():
             reward_tensor[i, valid_response_length - 1] = score
 
         return reward_tensor
-"""
+#"""
 
 import ray
 import hydra
