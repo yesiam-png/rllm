@@ -230,8 +230,8 @@ def grade_call_based(
             start = time.time()
             prediction = method(*gt_inp)
 
-            print("predictionnn", prediction)
-            print("gt_outtt", gt_out)
+          #  print("predictionnn", prediction)
+          #  print("gt_outtt", gt_out)
             
             total_execution += time.time() - start
             signal.alarm(0)
@@ -427,6 +427,8 @@ def run_test(sample, test=None, debug=False, timeout=6):
         in_outs = None
 
     if in_outs:
+        #if "class Solution" in test:
+        #    print("zzz", in_outs.get("fn_name"))
         if in_outs.get("fn_name") is None:
             which_type = CODE_TYPE.standard_input  # Standard input
             method_name = None

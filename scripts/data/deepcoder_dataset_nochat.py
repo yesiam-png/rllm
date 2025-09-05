@@ -48,11 +48,16 @@ def make_map_fn(split: str):
                     test['metadata'] = example['metadata']
         
         tests = json.dumps(tests)
-
+        
         #"""
         if dataset_name == "livecodebench":
-            starter_code = example.get("starter_code", None)
+           # if example.get("starter_code", None):
+           #     print("tests", json.loads(tests)[0]['metadata'].get("func_name"))
+            starter_code = example.get("starter_code", "def solve():")
             question = question + "\n\n" + starter_code.strip() + "\n" #fetch_live_code_bench_system_prompt(question, starter_code)
+        else:
+            question = question + "\n\n" + "def solve():" + "\n"
+
         """
         else:
             question = LCB_SYSTEM_MESSAGE_GENERIC + "\n\n" + question
@@ -66,7 +71,7 @@ def make_map_fn(split: str):
         #    question = question + "\n\n" + example["starter_code"].strip() + "\n"
         #else:
         #    assert tests["fn_name"] is None or tests["fn_name"] == "null"
-        question = question + "\n\n" + "def solve():" + "\n"
+        #question = question + "\n\n" + "def solve():" + "\n"
 
         if isinstance(question, dict):
             question = json.dumps(question)
@@ -77,7 +82,7 @@ def make_map_fn(split: str):
             "reward_model": {
                 "style": "rule",
                 "ground_truth": tests,
-               # "starter_code": example.get("starter_code", "").strip(),
+                "starter_code": example.get("starter_code", "").strip(),
             },
             "extra_info": {
                 'split': split,
