@@ -111,9 +111,9 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
             method_func = compile_and_get_func(synthesized_code, which_type, method_name, timeout=timeout, debug=debug)
         elif which_type == CODE_TYPE.standard_input:
             synthesized_code, exec_code = synthesize_std_code(test, debug)
-          #  if '\nsolve()' not in exec_code:
-          #      synthesized_code = synthesized_code + '\nsolve()\n'
-          #      exec_code = exec_code + '\nsolve()\n'
+            if '\nsolve()' not in exec_code:
+                synthesized_code = synthesized_code + '\nprint(solve())\n'
+                exec_code = exec_code + '\nprint(solve())\n'
 
             method_func = compile_and_get_func(synthesized_code, which_type, method_name, timeout=timeout, debug=debug)
         """
@@ -140,7 +140,6 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
             elif which_type == CODE_TYPE.standard_input:
                 #if '\nsolve()' not in exec_code:
                 #    exec_code = exec_code + '\nsolve()\n'
-                print("exec_code", exec_code)
                 detail_results = execute_std_code(method_func, exec_code, inputs_list, outputs_list, timeout=timeout, early_stop=True, debug=debug)
                 debug_infos = detail_results.get('debug', None)
                 detail_results = {k:v for k, v in detail_results.items() if k!='debug'}
@@ -377,7 +376,7 @@ def remove_tmp_files():
             os.remove(tmp_file)
 
 def clean_stdout(stdout):
-    return stdout.rstrip('\n')
+    return stdout.rstrip('\n').rstip("None").rstip('\n')
 
 def execute_std_code(method, synthesized_code, inputs_list, outputs_list, timeout, early_stop=False, debug=False):
     temp_program_path = create_temp_file(synthesized_code)
@@ -389,6 +388,7 @@ def execute_std_code(method, synthesized_code, inputs_list, outputs_list, timeou
     if debug:
         exec_results['debug'] = {}
     for i, inputs in enumerate(inputs_list):
+      #  print("zzzinputs", inputs)
         remove_tmp_files()
         outputs = outputs_list[i]
         if isinstance(inputs, list):
@@ -414,6 +414,17 @@ def execute_std_code(method, synthesized_code, inputs_list, outputs_list, timeou
                                         text=True)
                 signal.alarm(0)
                 stdout, stderr = result.stdout, result.stderr
+                print("stdout, stderr", stdout, stderr)
+                from pathlib import Path
+
+                p = Path(temp_program_path)
+                try:
+                    print("=== File contents ===")
+                    print(p.read_text(encoding="utf-8"))
+                    print("=== End of file ===")
+                except FileNotFoundError:
+                    print(f"Not found: {p}")
+
                 return_code = result.returncode
                 # result = subprocess.run(['python3', temp_program_path], input=inputs, text=True, capture_output=True, timeout=timeout)
                 exec_code = 999
@@ -491,6 +502,7 @@ def create_temp_file(content):
     return temp_file_path
 
 def compare_std_results(exec_outputs, outputs, debug=False):
+    print("exec_outputs", exec_outputs, "outputs", outputs)
     if stripped_string_compare(exec_outputs, outputs):
         return True
     
