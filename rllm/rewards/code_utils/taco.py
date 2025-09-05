@@ -115,7 +115,8 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
                 synthesized_code = synthesized_code + '\nprint(solve())\n'
                 exec_code = exec_code + '\nprint(solve())\n'
 
-            method_func = compile_and_get_func(synthesized_code, which_type, method_name, timeout=timeout, debug=debug)
+            method_func = ""
+           # method_func = compile_and_get_func(synthesized_code, which_type, method_name, timeout=timeout, debug=debug)
         """
         elif which_type == CODE_TYPE.standard_input:
             synthesized_code, exec_code = synthesize_std_code(test, debug)
@@ -131,10 +132,10 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
                 timeout=timeout, early_stop=True, debug=debug
             )
         """
-        if not method_func:
-            results.append(-2)
-            return results
-        else:
+     #   if not method_func:
+     #       results.append(-2)
+     #       return results
+        if True: #else:
             if which_type == CODE_TYPE.call_based:  # Call-based
                 detail_results, debug_infos = execute_cb_code(method_func, inputs_list, outputs_list, timeout=timeout, early_stop=True, debug=debug)
             elif which_type == CODE_TYPE.standard_input:
@@ -376,7 +377,7 @@ def remove_tmp_files():
             os.remove(tmp_file)
 
 def clean_stdout(stdout):
-    return stdout.rstrip('\n').rstip("None").rstip('\n')
+    return stdout.rstrip('\n').rstrip("None").rstrip('\n')
 
 def execute_std_code(method, synthesized_code, inputs_list, outputs_list, timeout, early_stop=False, debug=False):
     temp_program_path = create_temp_file(synthesized_code)
@@ -414,7 +415,7 @@ def execute_std_code(method, synthesized_code, inputs_list, outputs_list, timeou
                                         text=True)
                 signal.alarm(0)
                 stdout, stderr = result.stdout, result.stderr
-                print("stdout, stderr", stdout, stderr)
+                #print("stdout, stderr", stdout, stderr)
                 from pathlib import Path
 
                 p = Path(temp_program_path)
@@ -444,6 +445,7 @@ def execute_std_code(method, synthesized_code, inputs_list, outputs_list, timeou
 
         if exec_code > 0:
             if compare_std_results(stdout, outputs, debug):
+                print("inputsinputs", inputs)
                 exec_code = 1
             else:
                 exec_code = 0
