@@ -202,16 +202,17 @@ def grade_call_based(
 ):
     # call-based clean up logic
     # need to wrap in try-catch logic after to catch the correct errors, but for now this is fine.
-    code = import_string + "\n\n" + code
+    code = BASE_IMPORTS + "\n" + code
     compiled_sol = compile_code(code, timeout)
+    #method = get_function(compiled_mod, "solve")
 
-    if compiled_sol is None:
-        return
+    #if compiled_sol is None:
+    #    return
 
     method = get_function(compiled_sol, fn_name)
 
-    if method is None:
-        return
+    #if method is None:
+    #    return
 
     all_inputs = [
         [json.loads(line) for line in inputs.split("\n")] for inputs in all_inputs
@@ -228,6 +229,10 @@ def grade_call_based(
             # can lock here so time is useful
             start = time.time()
             prediction = method(*gt_inp)
+
+            print("predictionnn", prediction)
+            print("gt_outtt", gt_out)
+            
             total_execution += time.time() - start
             signal.alarm(0)
 
@@ -284,21 +289,26 @@ def grade_stdio(
     all_outputs: list,
     timeout: int,
 ):
+    code = BASE_IMPORTS + "\n" + code
+    compiled_mod = compile_code(code, timeout)
+    method = get_function(compiled_mod, "solve")
     ## runtime doesn't interact well with __name__ == '__main__'
-    code = clean_if_name(code)
+   # code = clean_if_name(code)
 
     ## we wrap the given code inside another function
-    code = make_function(code)
+   # code = make_function(code)
+   ## if '\nsolve()' not in code:
+    ##    code = code + '\nprint(solve())\n'
+    ##code = BASE_IMPORTS + "\n" + code
 
-    compiled_sol = compile_code(code, timeout)
-    if compiled_sol is None:
-        return
+    #compiled_sol = compile_code(code, timeout)
+    #if compiled_sol is None:
+    #    return
 
-    method = get_function(compiled_sol, "wrapped_function")
+    #method = get_function(compiled_sol, "wrapped_function")
 
-    if method is None:
-        return
-
+    #if method is None:
+    #    return
     all_results = []
     total_execution_time = 0
     for idx, (gt_inp, gt_out) in enumerate(zip(all_inputs, all_outputs)):
@@ -342,7 +352,8 @@ def grade_stdio(
 
         stripped_prediction_lines = get_stripped_lines(prediction)
         stripped_gt_out_lines = get_stripped_lines(gt_out)
-
+        #print("stripped_prediction_lines", stripped_prediction_lines)
+        #print("stripped_gt_out_lines", stripped_gt_out_lines)
         ## WA happens in multiple circumstances
         ## so cache the return to make it clean!
         WA_send_args = {
@@ -392,7 +403,6 @@ def grade_stdio(
             all_results.append(-2)
             return all_results, WA_send_args
         all_results.append(True)
-
     return all_results, {"execution time": total_execution_time}
 
 

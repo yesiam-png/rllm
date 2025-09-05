@@ -71,8 +71,6 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
     if test(generated_code) is not None it'll try to run the code.
     otherwise it'll just return an input and output pair.
     """
-   # print("testssss", test)
-
     test = f"{BASE_IMPORTS}\n{test}"
     if isinstance(in_outs, str):
         try:
@@ -141,15 +139,14 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
             elif which_type == CODE_TYPE.standard_input:
                 #if '\nsolve()' not in exec_code:
                 #    exec_code = exec_code + '\nsolve()\n'
-                detail_results = execute_std_code(method_func, exec_code, inputs_list, outputs_list, timeout=timeout, early_stop=True, debug=debug)
+                detail_results = execute_std_code(method_func, exec_code, inputs_list, outputs_list, timeout=timeout, early_stop=True, debug=debug) # method_func not used
                 debug_infos = detail_results.get('debug', None)
                 detail_results = {k:v for k, v in detail_results.items() if k!='debug'}
-                print("detail_results", detail_results)
                 if set(detail_results.values()) == {(False, 'returncode:1')}:
                     synthesized_code, exec_code = synthesize_std_code(test, debug)
-                    if '\nsolve()' not in synthesized_code:
-                        synthesized_code = synthesized_code + '\nsolve()\n'
-                    print("synthesized_code", synthesized_code, which_type)
+                    #if '\nsolve()' not in synthesized_code:
+                    #    synthesized_code = synthesized_code + '\nsolve()\n'
+                    #print("synthesized_code", synthesized_code, which_type)
                     detail_results = execute_std_code(method_func, synthesized_code, inputs_list, outputs_list, timeout=timeout, early_stop=True, debug=debug) # +'\nsolve()\n'
         if isinstance(detail_results, list):
             if len(detail_results) == 1:
@@ -198,9 +195,7 @@ def compile_and_get_func(program, which_type, method_name, timeout, debug):
         else:
             tmp = tmp_sol
         signal.alarm(0)
-        print("syllll")
     except Exception as e:
-        print("zzzzsa", program, e)
         signal.alarm(0)
         if debug:
             print(f"compilation error = {e}")
@@ -444,8 +439,8 @@ def execute_std_code(method, synthesized_code, inputs_list, outputs_list, timeou
         stdout = clean_stdout(stdout)
 
         if exec_code > 0:
+            print("stderr", stderr)
             if compare_std_results(stdout, outputs, debug):
-                print("inputsinputs", inputs)
                 exec_code = 1
             else:
                 exec_code = 0
@@ -504,7 +499,7 @@ def create_temp_file(content):
     return temp_file_path
 
 def compare_std_results(exec_outputs, outputs, debug=False):
-    print("exec_outputs", exec_outputs, "outputs", outputs)
+    #print("exec_outputs", exec_outputs, "outputs", outputs)
     if stripped_string_compare(exec_outputs, outputs):
         return True
     

@@ -49,10 +49,11 @@ def make_map_fn(split: str):
         
         tests = json.dumps(tests)
 
-        """
+        #"""
         if dataset_name == "livecodebench":
             starter_code = example.get("starter_code", None)
-            question = fetch_live_code_bench_system_prompt(question, starter_code)
+            question = question + "\n\n" + starter_code.strip() + "\n" #fetch_live_code_bench_system_prompt(question, starter_code)
+        """
         else:
             question = LCB_SYSTEM_MESSAGE_GENERIC + "\n\n" + question
             question += f"### Format: {LCB_FORMATTING_WITHOUT_STARTER_CODE}\n"
@@ -106,7 +107,7 @@ if __name__ == '__main__':
 
 
     #Initialize datasets
-    train_datasets = [TrainDataset.Code.PRIMEINTELLECT, TrainDataset.Code.TACO, TrainDataset.Code.LIVECODEBENCH]
+    train_datasets = [TrainDataset.Code.LIVECODEBENCH]#[TrainDataset.Code.PRIMEINTELLECT, TrainDataset.Code.TACO, TrainDataset.Code.LIVECODEBENCH]
     test_datasets = [TestDataset.Code.LIVECODEBENCH, TestDataset.Code.CODEFORCES, TestDataset.Code.HUMANEVALPLUS]
     
     test_datasets_data = [load_dataset(d) for d in test_datasets]
