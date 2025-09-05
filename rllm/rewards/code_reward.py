@@ -323,7 +323,7 @@ class RewardCodeFn(RewardFn):
             return RewardOutput(reward=self.config.format_error_reward, is_correct=False)
 
         model_code = extract_code_from_model(model_response, input.problem)
-        print("deeeebug", input.problem, dataset_name)
+        #print("deeeebug", input.problem, dataset_name)
         if model_code is None:
             # print("No code found in model response")
             return RewardOutput(reward=self.config.format_error_reward, is_correct=False)
