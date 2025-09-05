@@ -61,11 +61,11 @@ def make_map_fn(split: str):
         """
        # if tests["fn_name"] is None or tests["fn_name"] == "null":
        #     assert example.get("starter_code", "").strip() == ""
-        if example.get("starter_code", "").strip() != "":
-            question = question + "\n\n" + example["starter_code"].strip() + "\n"
-        else:
+        #if example.get("starter_code", "").strip() != "":
+        #    question = question + "\n\n" + example["starter_code"].strip() + "\n"
+        #else:
         #    assert tests["fn_name"] is None or tests["fn_name"] == "null"
-            question = question + "\n\n" + "def solve():" + "\n"
+        question = question + "\n\n" + "def solve():" + "\n"
 
         if isinstance(question, dict):
             question = json.dumps(question)
@@ -76,7 +76,7 @@ def make_map_fn(split: str):
             "reward_model": {
                 "style": "rule",
                 "ground_truth": tests,
-                "starter_code": example.get("starter_code", "").strip(),
+               # "starter_code": example.get("starter_code", "").strip(),
             },
             "extra_info": {
                 'split': split,

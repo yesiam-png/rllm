@@ -82,13 +82,13 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
             print(f"run_tests app/taco, Error parsing string: {e}")
             return []
     if in_outs:
-        if in_outs.get("fn_name") is None or n_outs.get("fn_name") == "null":
+        if True:#in_outs.get("fn_name") is None or n_outs.get("fn_name") == "null":
             which_type = CODE_TYPE.standard_input  # Standard input
             method_name = None
-        else:
-            which_type = CODE_TYPE.call_based  # Call-based
-            method_name = in_outs["fn_name"]
-            print("method_namemethod_name", method_name)
+        #else:
+        #    which_type = CODE_TYPE.call_based  # Call-based
+        #    method_name = in_outs["fn_name"]
+        #    print("method_namemethod_name", method_name)
     inputs_list = []
     outputs_list = []
     for index, inputs in enumerate(in_outs["inputs"]):
@@ -111,8 +111,26 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
             method_func = compile_and_get_func(synthesized_code, which_type, method_name, timeout=timeout, debug=debug)
         elif which_type == CODE_TYPE.standard_input:
             synthesized_code, exec_code = synthesize_std_code(test, debug)
-          #  print("synthesized_code", synthesized_code, which_type)
+          #  if '\nsolve()' not in exec_code:
+          #      synthesized_code = synthesized_code + '\nsolve()\n'
+          #      exec_code = exec_code + '\nsolve()\n'
+
             method_func = compile_and_get_func(synthesized_code, which_type, method_name, timeout=timeout, debug=debug)
+        """
+        elif which_type == CODE_TYPE.standard_input:
+            synthesized_code, exec_code = synthesize_std_code(test, debug)
+            # Only append the invocation to the EXECUTED string, not the compiled one
+            if '\nsolve()' not in exec_code:
+                exec_code = exec_code + '\nsolve()\n'
+
+            # SKIP compile_and_get_func for stdin tasks
+            method_func = True  # dummy sentinel so later code paths are happy
+
+            detail_results = execute_std_code(
+                method_func, exec_code, inputs_list, outputs_list,
+                timeout=timeout, early_stop=True, debug=debug
+            )
+        """
         if not method_func:
             results.append(-2)
             return results
@@ -120,13 +138,18 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
             if which_type == CODE_TYPE.call_based:  # Call-based
                 detail_results, debug_infos = execute_cb_code(method_func, inputs_list, outputs_list, timeout=timeout, early_stop=True, debug=debug)
             elif which_type == CODE_TYPE.standard_input:
+                #if '\nsolve()' not in exec_code:
+                #    exec_code = exec_code + '\nsolve()\n'
+                print("exec_code", exec_code)
                 detail_results = execute_std_code(method_func, exec_code, inputs_list, outputs_list, timeout=timeout, early_stop=True, debug=debug)
                 debug_infos = detail_results.get('debug', None)
                 detail_results = {k:v for k, v in detail_results.items() if k!='debug'}
+                print("detail_results", detail_results)
                 if set(detail_results.values()) == {(False, 'returncode:1')}:
                     synthesized_code, exec_code = synthesize_std_code(test, debug)
                     if '\nsolve()' not in synthesized_code:
                         synthesized_code = synthesized_code + '\nsolve()\n'
+                    print("synthesized_code", synthesized_code, which_type)
                     detail_results = execute_std_code(method_func, synthesized_code, inputs_list, outputs_list, timeout=timeout, early_stop=True, debug=debug) # +'\nsolve()\n'
         if isinstance(detail_results, list):
             if len(detail_results) == 1:
@@ -141,6 +164,7 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
                 results.append(-1)
             else:
                 results.append(-3)
+        print("resultsresults", results[:10])
         return results
 
 def process_input_output(inputs, outputs):
@@ -174,7 +198,9 @@ def compile_and_get_func(program, which_type, method_name, timeout, debug):
         else:
             tmp = tmp_sol
         signal.alarm(0)
+        print("syllll")
     except Exception as e:
+        print("zzzzsa", program, e)
         signal.alarm(0)
         if debug:
             print(f"compilation error = {e}")
@@ -183,7 +209,7 @@ def compile_and_get_func(program, which_type, method_name, timeout, debug):
     if which_type == CODE_TYPE.call_based:
         assert isinstance(method_name, str)
     else:
-        method_name = "code"
+        method_name = "solve"
     
     try:
         signal.alarm(timeout)
@@ -236,20 +262,20 @@ def synthesize_std_code(raw_code, debug=False):
         code_type = code_types[idx]
         if code_type == 0 and not started:
             sol2 += normal_import_lines
-            sol2 += "\nstdin = sys.stdin\nstdout = sys.stdout\n"
+           # sol2 += "\nstdin = sys.stdin\nstdout = sys.stdout\n"
             sol2 += f"{i}\n"
 
             sol += normal_import_lines
             sol += special_import_lines
-            sol += "\nstdin = sys.stdin\nstdout = sys.stdout\n"
+           # sol += "\nstdin = sys.stdin\nstdout = sys.stdout\n"
            # sol += "def code():\n"
-            sol += f"\t{i}\n"
+            sol += f"{i}\n" #f"\t{i}\n"
             started = True
         else:
             sol2 += f"{i}\n"
             if code_type < 2:
-                if started:
-                    sol += '\t'
+               # if started:
+               #     sol += '\t'
                 sol += f"{i}\n"
     
     if debug:

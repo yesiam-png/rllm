@@ -64,9 +64,9 @@ class NaiveRewardManager:
             
 
             response_only = self.tokenizer.decode(valid_response_ids)
-            starter_code = data_item.non_tensor_batch['reward_model']['starter_code']
-            if starter_code == "":
-                starter_code = "def solve():"
+#            starter_code = data_item.non_tensor_batch['reward_model']['starter_code']
+            #if starter_code == "":
+            starter_code = "def solve():"
             response_only = starter_code + "\n" + response_only
 
             ground_truth = data_item.non_tensor_batch['reward_model']['ground_truth']
