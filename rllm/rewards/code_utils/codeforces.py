@@ -212,20 +212,20 @@ def synthesize_std_code(raw_code, debug=False):
         code_type = code_types[idx]
         if code_type == 0 and not started:
             sol2 += normal_import_lines
-            sol2 += "\nstdin = sys.stdin\nstdout = sys.stdout\n"
+           # sol2 += "\nstdin = sys.stdin\nstdout = sys.stdout\n"
             sol2 += f"{i}\n"
 
             sol += normal_import_lines
             sol += special_import_lines
-            sol += "\nstdin = sys.stdin\nstdout = sys.stdout\n"
-            sol += "def code():\n"
-            sol += f"\t{i}\n"
+          #  sol += "\nstdin = sys.stdin\nstdout = sys.stdout\n"
+          #  sol += "def code():\n"
+            sol += f"{i}\n" #f"\t{i}\n"
             started = True
         else:
             sol2 += f"{i}\n"
             if code_type < 2:
-                if started:
-                    sol += '\t'
+                #if started:
+                #    sol += '\t'
                 sol += f"{i}\n"
     
     if debug:
@@ -325,7 +325,17 @@ def remove_tmp_files():
     for tmp_file in tmp_files:
         if tmp_file in os.listdir('.'):
             os.remove(tmp_file)
-#TODO(Xiaoxiang): has to modify that 
+
+
+def remove_tmp_files():
+    tmp_files = ['input.txt', 'output.txt']
+    for tmp_file in tmp_files:
+        if tmp_file in os.listdir('.'):
+            os.remove(tmp_file)
+
+def clean_stdout(stdout):
+    return stdout.rstrip('\n').rstrip("None").rstrip('\n')
+
 def execute_std_code(method, synthesized_code, inputs_list, outputs_list, timeout, early_stop=False, debug=False):
     temp_program_path = create_temp_file(synthesized_code)
     if debug:
@@ -336,74 +346,106 @@ def execute_std_code(method, synthesized_code, inputs_list, outputs_list, timeou
     if debug:
         exec_results['debug'] = {}
     for i, inputs in enumerate(inputs_list):
+      #  print("zzzinputs", inputs)
         remove_tmp_files()
         outputs = outputs_list[i]
         if isinstance(inputs, list):
+            inputs = [str(k) for k in inputs]
             inputs = "\n".join(inputs)
         if isinstance(outputs, list):
+            outputs = [str(k) for k in outputs]
             outputs = "\n".join(outputs)
-        
-        from pathlib import Path
-        p = Path(temp_program_path)
-        try:
-            print("=== File contents ===")
-            print(p.read_text(encoding="utf-8"))
-            print("=== End of file ===")
-        except FileNotFoundError:
-            print(f"Not found: {p}")
-        
-        try:
-            result = subprocess.run(['python', temp_program_path], input=inputs, text=True, capture_output=True, timeout=timeout)  
-            exec_code = 999
-        except subprocess.TimeoutExpired:
-            exec_code = -1
-        except Exception as e:
-            print(e)
-            exec_code = -2
+        with tempfile.NamedTemporaryFile(mode='w+') as temp_input:
+            temp_input.write(inputs)
+            temp_input.flush()
+            temp_input.seek(0)
+            temp_file_name = temp_input.name
+            stdout, stderr = "", ""
+            try:
+                result = subprocess.run(['bash', '-c', 'ulimit -v 10485760; python3 ' + temp_program_path], 
+                                        stdin=temp_input,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE,
+                                        preexec_fn=os.setsid,
+                                        universal_newlines=True,
+                                        timeout=timeout,
+                                        text=True)
+                signal.alarm(0)
+                stdout, stderr = result.stdout, result.stderr
+                #print("stdout, stderr", stdout, stderr)
+                from pathlib import Path
+                p = Path(temp_program_path)
+                try:
+                    print("=== File contents ===")
+                    print(p.read_text(encoding="utf-8"))
+                    print("=== End of file ===")
+                except FileNotFoundError:
+                    print(f"Not found: {p}")
+
+                return_code = result.returncode
+                # result = subprocess.run(['python3', temp_program_path], input=inputs, text=True, capture_output=True, timeout=timeout)
+                exec_code = 999
+            except subprocess.TimeoutExpired as e:
+                print(e, temp_file_name)
+                signal.alarm(0)
+                stderr = "TIMEOUT"
+                return_code = -9
+                exec_code = -1
+            except Exception as e:
+                print(e, temp_file_name)
+                return_code = -99
+                stderr = f"{e}"
+                exec_code = -2
+
+        stdout = clean_stdout(stdout)
 
         if exec_code > 0:
-            # if result.returncode != 0:
-            #     try:
-            #         inputs_tmp_file = open(create_temp_file(inputs), 'r')
-            #         result = subprocess.run(['python', temp_program_path], stdin=inputs_tmp_file, text=True, capture_output=True, timeout=timeout)
-            #         assert result.returncode == 0
-            #         if compare_std_results(result.stdout, outputs, debug):
-            #             exec_code = 1
-            #         else:
-            #             exec_code = 0
-            #     except:
-            #         try:
-            #             inputs_tmp_file = 'input.txt'
-            #             with open(inputs_tmp_file, 'w') as ftemp:
-            #                 ftemp.write(inputs)
-            #             result = subprocess.run(['python', temp_program_path], text=True, timeout=timeout)
-            #             assert result.returncode == 0
-            #             if compare_std_results(open('output.txt').read(), outputs, debug):
-            #                 exec_code = 1
-            #             else:
-            #                 exec_code = 0
-                        
-            #         except:
-            #             exec_code = -3
-            print("sssydout", result.stdout)
-            print("codeoutputs", outputs)
-            if compare_std_results(result.stdout, outputs, debug):
+           # print("stderr", stderr)
+            if compare_std_results(stdout, outputs, debug):
                 exec_code = 1
             else:
                 exec_code = 0
+                # if return_code != 0:
+                #     try:
+                #         inputs_tmp_file = open(create_temp_file(inputs), 'r')
+                #         result = subprocess.run(['python', temp_program_path], stdin=inputs_tmp_file, text=True, capture_output=True, timeout=timeout)
+                #         assert result.returncode == 0
+                #         stdout = result.stdout
+                #         if compare_std_results(stdout, outputs, debug):
+                #             exec_code = 1
+                #         else:
+                #             exec_code = 0
+                #     except:
+                #         try:
+                #             inputs_tmp_file = 'input.txt'
+                #             with open(inputs_tmp_file, 'w') as ftemp:
+                #                 ftemp.write(inputs)
+                #             result = subprocess.run(['python', temp_program_path], text=True, timeout=timeout)
+                #             assert result.returncode == 0
+                #             stdout = open('output.txt').read()
+                #             if compare_std_results(stdout, outputs, debug):
+                #                 exec_code = 1
+                #             else:
+                #                 exec_code = 0
+                            
+                #         except:
+                #             exec_code = -3
         assert exec_code != -3
-        exec_results[i] = (exec_code==1, EXECUTION_RESULTS[exec_code] if exec_code>-3 else EXECUTION_RESULTS[exec_code].format(result.returncode))
+        exec_results[i] = (exec_code==1, EXECUTION_RESULTS[exec_code] if exec_code>-3 else EXECUTION_RESULTS[exec_code].format(return_code))
         if exec_code >= 0:
             if debug:
-                print_debug_info(inputs=inputs, outputs=outputs, exec_outputs=result.stdout)
+                print_debug_info(inputs=inputs, outputs=outputs, exec_outputs=stdout)
+                print("Stderr:", stderr)
                 exec_results['debug'][i] = {
                     'inputs': inputs,
                     'gt_outputs': outputs,
-                    'exec_outputs': result.stdout
+                    'exec_outputs': stdout,
+                    'stderr': stderr
                 }
         if early_stop and exec_code<=0:
             break
     return exec_results
+
 
 def print_debug_info(inputs, outputs, exec_outputs):
     nl = "\n"
@@ -419,6 +461,8 @@ def create_temp_file(content):
     return temp_file_path
 
 def compare_std_results(exec_outputs, outputs, debug=False):
+    print("exec_outputscc", exec_outputs)
+    print("outputsoutputscc", outputs)
     if stripped_string_compare(exec_outputs, outputs):
         return True
     

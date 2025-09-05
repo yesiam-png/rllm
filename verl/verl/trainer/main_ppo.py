@@ -71,14 +71,19 @@ class RewardManager():
             sequences_str = self.tokenizer.decode(sequences)
 
             prompt_only = self.tokenizer.decode(valid_prompt_ids)
-            llm_response = self.tokenizer.decode(valid_response_ids)
+            response_only = self.tokenizer.decode(valid_response_ids)
+
+            starter_code = data_item.non_tensor_batch['reward_model']['starter_code']
+            if starter_code == "":
+                starter_code = "def solve():"
+            response_only = starter_code + "\n" + response_only
 
             ground_truth = data_item.non_tensor_batch['reward_model']['ground_truth']
 
             # select rm_score
             data_source = data_item.non_tensor_batch['data_source']
             compute_score_fn = _select_rm_score_fn(data_source)
-            score = compute_score_fn(data_source=data_source, llm_solution=sequences_str, ground_truth=ground_truth, response_only=llm_response)  # llm_solution=sequences_str
+            score = compute_score_fn(data_source=data_source, llm_solution=sequences_str, ground_truth=ground_truth, response_only=response_only)  # llm_solution=sequences_str
             
             # with print_lock:
             #     if data_source not in already_print_data_sources:

@@ -51,7 +51,7 @@ def extract_code_from_model(model_response: str, response_only: str):
     #print("response_only", response_only)
     response_only = trim_after_stop(response_only, stop)
 
-   # print("afterremove", response_only)
+    #print("afterremove", response_only)
    # if '\nsolve()' not in response_only:
    #     response_only += '\nsolve()'
     return response_only.strip()
@@ -323,6 +323,7 @@ class RewardCodeFn(RewardFn):
             return RewardOutput(reward=self.config.format_error_reward, is_correct=False)
 
         model_code = extract_code_from_model(model_response, input.problem)
+        print("deeeebug", input.problem, dataset_name)
         if model_code is None:
             # print("No code found in model response")
             return RewardOutput(reward=self.config.format_error_reward, is_correct=False)
