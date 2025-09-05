@@ -82,7 +82,7 @@ def make_map_fn(split: str):
             "reward_model": {
                 "style": "rule",
                 "ground_truth": tests,
-                "starter_code": example.get("starter_code", "").strip(),
+                "starter_code": example.get("starter_code", "").strip() if dataset_name == "livecodebench" else "",
             },
             "extra_info": {
                 'split': split,
@@ -112,7 +112,7 @@ if __name__ == '__main__':
 
 
     #Initialize datasets
-    train_datasets = [TrainDataset.Code.LIVECODEBENCH]#[TrainDataset.Code.PRIMEINTELLECT, TrainDataset.Code.TACO, TrainDataset.Code.LIVECODEBENCH]
+    train_datasets = [TrainDataset.Code.LIVECODEBENCH, TrainDataset.Code.PRIMEINTELLECT, TrainDataset.Code.TACO, TrainDataset.Code.LIVECODEBENCH]
     test_datasets = [TestDataset.Code.LIVECODEBENCH, TestDataset.Code.CODEFORCES, TestDataset.Code.HUMANEVALPLUS]
     
     test_datasets_data = [load_dataset(d) for d in test_datasets]

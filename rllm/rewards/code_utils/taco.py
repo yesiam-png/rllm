@@ -161,7 +161,6 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
                 results.append(-1)
             else:
                 results.append(-3)
-        print("resultsresults", results[:10])
         return results
 
 def process_input_output(inputs, outputs):
@@ -223,7 +222,6 @@ def synthesize_cb_code(raw_code, debug=False):
     if debug:
         print(f"loading test code = {datetime.now().time()}")
     sol += raw_code
-    print("synthesize_cb_code", raw_code)
     return sol
 
 def synthesize_std_code(raw_code, debug=False):
@@ -411,15 +409,14 @@ def execute_std_code(method, synthesized_code, inputs_list, outputs_list, timeou
                 signal.alarm(0)
                 stdout, stderr = result.stdout, result.stderr
                 #print("stdout, stderr", stdout, stderr)
-                from pathlib import Path
-
-                p = Path(temp_program_path)
-                try:
-                    print("=== File contents ===")
-                    print(p.read_text(encoding="utf-8"))
-                    print("=== End of file ===")
-                except FileNotFoundError:
-                    print(f"Not found: {p}")
+                #from pathlib import Path
+                #p = Path(temp_program_path)
+                #try:
+                #    print("=== File contents ===")
+                #    print(p.read_text(encoding="utf-8"))
+                #    print("=== End of file ===")
+                #except FileNotFoundError:
+                #    print(f"Not found: {p}")
 
                 return_code = result.returncode
                 # result = subprocess.run(['python3', temp_program_path], input=inputs, text=True, capture_output=True, timeout=timeout)
@@ -439,7 +436,7 @@ def execute_std_code(method, synthesized_code, inputs_list, outputs_list, timeou
         stdout = clean_stdout(stdout)
 
         if exec_code > 0:
-            print("stderr", stderr)
+           # print("stderr", stderr)
             if compare_std_results(stdout, outputs, debug):
                 exec_code = 1
             else:

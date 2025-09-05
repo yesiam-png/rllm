@@ -203,6 +203,7 @@ def grade_call_based(
     # call-based clean up logic
     # need to wrap in try-catch logic after to catch the correct errors, but for now this is fine.
     code = BASE_IMPORTS + "\n" + code
+    #print("codecode", code)
     compiled_sol = compile_code(code, timeout)
     #method = get_function(compiled_mod, "solve")
 

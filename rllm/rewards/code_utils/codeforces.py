@@ -57,7 +57,7 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
     #test_cases:[ { "input": "3 6 9", "output": "6" }, { "input": "4 4 4", "output": "4" }, { "input": "0 0 0", "output": "0" } ]
     #test_cases: [ { "input": "20 40 60 80 100\n0 1 2 3 4\n1 0", "output": "4900" }, { "input": "119 119 119 119 119\n0 0 0 0 0\n10 0", "output": "4930" }]
     if in_outs:
-        if in_outs[0].get("fn_name") is None:
+        if True: #in_outs[0].get("fn_name") is None:
             fn_name = in_outs[0].get("fn_name")
             which_type = CODE_TYPE.standard_input  # Standard input
             method_name = None
@@ -86,11 +86,18 @@ def run_test(in_outs, test=None, debug=False, timeout=TIMEOUT):
             method_func = compile_and_get_func(synthesized_code, which_type, method_name, timeout=timeout, debug=debug)
         elif which_type == CODE_TYPE.standard_input:
             synthesized_code, exec_code = synthesize_std_code(test, debug)
-            method_func = compile_and_get_func(synthesized_code, which_type, method_name, timeout=timeout, debug=debug)
-        if not method_func:
-            results.append(-2)
-            return results
-        else:
+
+            if '\nsolve()' not in exec_code:
+                synthesized_code = synthesized_code + '\nprint(solve())\n'
+                exec_code = exec_code + '\nprint(solve())\n'
+
+            method_func = ""
+
+        #    method_func = compile_and_get_func(synthesized_code, which_type, method_name, timeout=timeout, debug=debug)
+        #if not method_func:
+        #    results.append(-2)
+        #    return results
+        if True:
             if which_type == CODE_TYPE.call_based:  # Call-based
                 detail_results, debug_infos = execute_cb_code(method_func, inputs_list, outputs_list, timeout=timeout, early_stop=True, debug=debug)
             elif which_type == CODE_TYPE.standard_input:
@@ -336,6 +343,15 @@ def execute_std_code(method, synthesized_code, inputs_list, outputs_list, timeou
         if isinstance(outputs, list):
             outputs = "\n".join(outputs)
         
+        from pathlib import Path
+        p = Path(temp_program_path)
+        try:
+            print("=== File contents ===")
+            print(p.read_text(encoding="utf-8"))
+            print("=== End of file ===")
+        except FileNotFoundError:
+            print(f"Not found: {p}")
+        
         try:
             result = subprocess.run(['python', temp_program_path], input=inputs, text=True, capture_output=True, timeout=timeout)  
             exec_code = 999
@@ -369,6 +385,8 @@ def execute_std_code(method, synthesized_code, inputs_list, outputs_list, timeou
                         
             #         except:
             #             exec_code = -3
+            print("sssydout", result.stdout)
+            print("codeoutputs", outputs)
             if compare_std_results(result.stdout, outputs, debug):
                 exec_code = 1
             else:
