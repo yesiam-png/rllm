@@ -163,12 +163,17 @@ def postprocess_lcb_sample(sample):
         'outputs': sample_outputs,
     }
     
-    if sample[0].get("testtype") == "functional":
-        metadata = sample[0].get("metadata", {})
-        fn_name = metadata.get("func_name", None)
-        assert fn_name is not None, f"Function name is not found, check if your LCB data is preprocessed correctly: {metadata}"
+    #if sample[0].get("testtype") == "functional":
+    metadata = sample[0].get("metadata", {})
+    fn_name = metadata.get("func_name", None)
+    if fn_name is not None:
+        #metadata = sample[0].get("metadata", {})
+        #fn_name = metadata.get("func_name", None)
+        #assert fn_name is not None, f"Function name is not found, check if your LCB data is preprocessed correctly: {metadata}"
         # Fill in the blank
         sample_dict['fn_name'] = fn_name
+    else:
+        sample_dict['fn_name'] = None
     
     sample = {
         'input_output': json.dumps(sample_dict),
@@ -331,6 +336,9 @@ class RewardCodeFn(RewardFn):
         # Tests: List[Dictionary] - Codeforces, LiveCodeBench
         # Tests: Dictionary[Lists] - CodeContests, Taco/Apps
         is_correct = False
+       # print("dataset_namezz", dataset_name)
+        is_correct = lcb_check_correctness_v2(tests, model_code, debug=False)
+        """
         if dataset_name in ["taco", "apps", "code_contests"]:
             test_fn = taco_run_test
             is_correct = check_correctness(tests, model_code, test_fn)
@@ -349,7 +357,7 @@ class RewardCodeFn(RewardFn):
             is_correct = humanevalplus_check_correctness(tests, model_code)
         else:
             is_correct = check_correctness(tests, model_code, test_fn)
-
+        """
         total_time = time.time() - total_start_time
         # print(f"Total reward function execution time: {total_time:.2f} seconds")
 

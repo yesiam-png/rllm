@@ -71,7 +71,6 @@ class NaiveRewardManager:
                 starter_code = "def solve():"
             response_only = starter_code + "\n" + response_only
 
-
             ground_truth = data_item.non_tensor_batch['reward_model']['ground_truth']
             # select rm_score
             data_source = data_item.non_tensor_batch['data_source']

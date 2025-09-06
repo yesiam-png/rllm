@@ -231,8 +231,8 @@ def grade_call_based(
             start = time.time()
             prediction = method(*gt_inp)
 
-          #("predictionnn", prediction)
-          #  print("gt_outtt", gt_out)
+           # print("predictionnn", prediction)
+           # print("gt_outtt", gt_out)
             
             total_execution += time.time() - start
             signal.alarm(0)
@@ -360,8 +360,8 @@ def grade_stdio(
 
         stripped_prediction_lines = get_stripped_lines(prediction)
         stripped_gt_out_lines = get_stripped_lines(gt_out)
-      #  print("stripped_prediction_lines", stripped_prediction_lines)
-      #  print("stripped_gt_out_lines", stripped_gt_out_lines)
+       # print("stripped_prediction_lines", stripped_prediction_lines)
+       # print("stripped_gt_out_lines", stripped_gt_out_lines)
         ## WA happens in multiple circumstances
         ## so cache the return to make it clean!
         WA_send_args = {
@@ -446,7 +446,7 @@ def run_test(sample, test=None, debug=False, timeout=6):
 
     if debug:
         print(f"loaded input_output = {datetime.now().time()}")
-   # print("testtest", test)
+    print("testtest", test)
     if test is None:
         assert False, "should not happen: test code is none"
         return in_outs, {"error": "no test code provided"}
