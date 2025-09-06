@@ -60,6 +60,8 @@ class NaiveRewardManager:
             # decode
             sequences = torch.cat((valid_prompt_ids, valid_response_ids))
             sequences_str = self.tokenizer.decode(sequences)
+
+            print("sequences_str", sequences_str)
             #sequences_str = self.tokenizer.decode(valid_prompt_ids) #+ "\n" + data_item.non_tensor_batch['reward_model']['starter_code']
             
 

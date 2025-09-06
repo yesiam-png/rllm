@@ -54,6 +54,8 @@ def make_map_fn(split: str):
            # if example.get("starter_code", None):
            #     print("tests", json.loads(tests)[0]['metadata'].get("func_name"))
             starter_code = example.get("starter_code", "def solve():")
+            if starter_code.strip() == "":
+                starter_code = "def solve():"
             question = question + "\n\n" + starter_code.strip() + "\n" #fetch_live_code_bench_system_prompt(question, starter_code)
         else:
             question = question + "\n\n" + "def solve():" + "\n"

@@ -20,14 +20,14 @@ done
 
 # Set default model path if not provided
 if [ -z "$MODEL_PATH" ]; then
-    MODEL_PATH="/mnt/task_runtime/40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400"
+    MODEL_PATH="Qwen/Qwen2.5-1.5B"
 fi
 
 # Train over 4 nodes, 8 A100-80GB GPUs per node.
 python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
     data.train_files=$HOME/rllm/data/deepcoder_train.parquet \
-    data.val_files=[$HOME/rllm/data/test_codeforces.parquet,$HOME/rllm/data/test_livecodebench.parquet] \
+    data.val_files=[$HOME/rllm/data/test_livecodebench.parquet] \
     data.train_batch_size=128 \
     data.val_batch_size=512 \
     data.max_prompt_length=1024 \
@@ -64,8 +64,8 @@ python3 -m verl.trainer.main_ppo \
     algorithm.mask_truncated_samples=True \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
-    trainer.project_name='rlvr-sep5' \
-    trainer.experiment_name='rl-40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400' \
+    trainer.project_name='rlvr-sep6' \
+    trainer.experiment_name='rl-60-400-llama-10warmup-nopenalty-log-005lenpenalty-2sync_step2600-newlcb' \
     +trainer.val_before_train=True \
     trainer.n_gpus_per_node=8 \
     trainer.nnodes=1 \

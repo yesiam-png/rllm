@@ -231,8 +231,8 @@ def grade_call_based(
             start = time.time()
             prediction = method(*gt_inp)
 
-            #print("predictionnn", prediction)
-            #print("gt_outtt", gt_out)
+          #("predictionnn", prediction)
+          #  print("gt_outtt", gt_out)
             
             total_execution += time.time() - start
             signal.alarm(0)
@@ -360,8 +360,8 @@ def grade_stdio(
 
         stripped_prediction_lines = get_stripped_lines(prediction)
         stripped_gt_out_lines = get_stripped_lines(gt_out)
-       # print("stripped_prediction_lines", stripped_prediction_lines)
-       # print("stripped_gt_out_lines", stripped_gt_out_lines)
+      #  print("stripped_prediction_lines", stripped_prediction_lines)
+      #  print("stripped_gt_out_lines", stripped_gt_out_lines)
         ## WA happens in multiple circumstances
         ## so cache the return to make it clean!
         WA_send_args = {
