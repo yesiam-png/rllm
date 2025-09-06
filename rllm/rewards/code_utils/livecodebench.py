@@ -231,8 +231,8 @@ def grade_call_based(
             start = time.time()
             prediction = method(*gt_inp)
 
-          #  print("predictionnn", prediction)
-          #  print("gt_outtt", gt_out)
+            #print("predictionnn", prediction)
+            #print("gt_outtt", gt_out)
             
             total_execution += time.time() - start
             signal.alarm(0)
@@ -257,6 +257,7 @@ def grade_call_based(
                     "error_message": "Wrong Answer",
                 }
         except Exception as e:
+            #print("wwwww", e)
             signal.alarm(0)
             if "timeoutexception" in repr(e).lower():
                 all_results.append(-3)
@@ -290,6 +291,8 @@ def grade_stdio(
     all_outputs: list,
     timeout: int,
 ):
+    #if '\nsolve()' not in code:
+    #    code = code + '\nprint(solve())\n'
     code = BASE_IMPORTS + "\n" + code
     compiled_mod = compile_code(code, timeout)
     method = get_function(compiled_mod, "solve")
@@ -320,7 +323,7 @@ def grade_stdio(
         with Capturing() as captured_output:
             try:
                 start = time.time()
-                call_method(method, gt_inp)
+                ret = call_method(method, gt_inp)
                 total_execution_time += time.time() - start
                 # reset the alarm
                 signal.alarm(0)
@@ -350,11 +353,15 @@ def grade_stdio(
                 faulthandler.disable()
 
         prediction = captured_output[0]
+        
+        if not prediction.strip() and ret is not None:
+            # simplest: exactly how `print(ret)` would stringify it
+            prediction = f"{ret}"
 
         stripped_prediction_lines = get_stripped_lines(prediction)
         stripped_gt_out_lines = get_stripped_lines(gt_out)
-        #print("stripped_prediction_lines", stripped_prediction_lines)
-        #print("stripped_gt_out_lines", stripped_gt_out_lines)
+       # print("stripped_prediction_lines", stripped_prediction_lines)
+       # print("stripped_gt_out_lines", stripped_gt_out_lines)
         ## WA happens in multiple circumstances
         ## so cache the return to make it clean!
         WA_send_args = {
@@ -439,7 +446,7 @@ def run_test(sample, test=None, debug=False, timeout=6):
 
     if debug:
         print(f"loaded input_output = {datetime.now().time()}")
-
+   # print("testtest", test)
     if test is None:
         assert False, "should not happen: test code is none"
         return in_outs, {"error": "no test code provided"}
