@@ -446,7 +446,7 @@ def run_test(sample, test=None, debug=False, timeout=6):
 
     if debug:
         print(f"loaded input_output = {datetime.now().time()}")
-    print("testtest", test)
+   # print("testtest", test)
     if test is None:
         assert False, "should not happen: test code is none"
         return in_outs, {"error": "no test code provided"}
