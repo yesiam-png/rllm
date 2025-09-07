@@ -459,9 +459,10 @@ def run_test(sample, test=None, debug=False, timeout=6):
 
         if which_type == CODE_TYPE.call_based:
             signal.alarm(timeout)
-            match = re.search(r"def\s+(\w+)\s*\(", method_name)
-            method_name = match.group(1)
-           # print("method_namemethod_name", method_name)
+            if "def" in method_name:
+                match = re.search(r"def\s+(\w+)\s*\(", method_name)
+                method_name = match.group(1)
+            #print("method_namemethod_name", method_name)
             try:
                 results, metadata = grade_call_based(
                     code=test,
