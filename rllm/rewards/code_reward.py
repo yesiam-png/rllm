@@ -51,7 +51,7 @@ def extract_code_from_model(model_response: str, response_only: str):
     #print("response_only", response_only)
     response_only = trim_after_stop(response_only, stop)
 
-    #print("afterremove", response_only)
+   # print("afterremove", response_only)
    # if '\nsolve()' not in response_only:
    #     response_only += '\nsolve()'
     return response_only.strip()
@@ -155,18 +155,24 @@ def check_correctness(tests: Union[List[Dict[str, str]], Dict[str, List[str]]], 
 
 
 def postprocess_lcb_sample(sample):
-    sample_inputs = [sample['input'] for sample in sample]
-    sample_outputs = [sample['output'] for sample in sample]
-    
+    if isinstance(sample, list):
+        sample_inputs = [sample['input'] for sample in sample]
+        sample_outputs = [sample['output'] for sample in sample]
+        metadata = sample[0].get("metadata", {})
+    else:
+        assert isinstance(sample, dict)
+        sample_inputs = sample['inputs']
+        sample_outputs = sample['outputs']
+        metadata = sample.get("metadata", {})
     sample_dict = {
         'inputs': sample_inputs,
         'outputs': sample_outputs,
     }
     
     #if sample[0].get("testtype") == "functional":
-    metadata = sample[0].get("metadata", {})
+    #metadata = sample[0].get("metadata", {})
     fn_name = metadata.get("func_name", None)
-    if fn_name is not None:
+    if fn_name is not None and fn_name.strip() is not "":
         #metadata = sample[0].get("metadata", {})
         #fn_name = metadata.get("func_name", None)
         #assert fn_name is not None, f"Function name is not found, check if your LCB data is preprocessed correctly: {metadata}"
