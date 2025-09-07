@@ -231,8 +231,8 @@ def grade_call_based(
             start = time.time()
             prediction = method(*gt_inp)
 
-           # print("predictionnn", prediction)
-           # print("gt_outtt", gt_out)
+          #  print("predictionnn", prediction)
+          #  print("gt_outtt", gt_out)
             
             total_execution += time.time() - start
             signal.alarm(0)
@@ -488,6 +488,8 @@ def run_test(sample, test=None, debug=False, timeout=6):
                 )
                 return results, metadata
             except Exception as e:
+              #  print("zzzzz", e)
+              #  print("test", test)
                 return [-4], {
                     "error_code": -4,
                     "error_message": f"Error during testing: {e}",

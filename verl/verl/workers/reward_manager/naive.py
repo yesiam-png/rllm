@@ -64,9 +64,12 @@ class NaiveRewardManager:
             #print("sequences_str", sequences_str)
             #sequences_str = self.tokenizer.decode(valid_prompt_ids) #+ "\n" + data_item.non_tensor_batch['reward_model']['starter_code']
             
-
             response_only = self.tokenizer.decode(valid_response_ids)
-            starter_code = data_item.non_tensor_batch['reward_model']['starter_code']
+            try:
+                starter_code = data_item.non_tensor_batch['reward_model']['starter_code']
+            except Exception as e:
+                print("whyhh", data_item.non_tensor_batch.keys())
+                raise e
             if starter_code == "":
                 starter_code = "def solve():"
             response_only = starter_code + "\n" + response_only
