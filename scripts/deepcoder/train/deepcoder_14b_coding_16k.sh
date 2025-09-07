@@ -20,7 +20,7 @@ done
 
 # Set default model path if not provided
 if [ -z "$MODEL_PATH" ]; then
-    MODEL_PATH="/mnt/task_runtime/40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400"
+    MODEL_PATH="/mnt/task_wrapper/60-400-llama1b-10warmup-5penalty-log-005lenpenalty-2sync_step2000"
 fi
 
 # Train over 4 nodes, 8 A100-80GB GPUs per node.
@@ -65,7 +65,7 @@ python3 -m verl.trainer.main_ppo \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name='rlvr-sep6' \
-    trainer.experiment_name='rl-40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400-temp001-areal' \
+    trainer.experiment_name='rl-60-400-llama1b-10warmup-5penalty-log-005lenpenalty-2sync_step2000-areal' \
     +trainer.val_before_train=True \
     trainer.n_gpus_per_node=8 \
     trainer.nnodes=1 \
