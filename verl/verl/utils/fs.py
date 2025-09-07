@@ -29,6 +29,8 @@ _HDFS_PREFIX = "hdfs://"
 def _is_non_local(path):
     return path.startswith(_HDFS_PREFIX)
 
+def is_non_local(path):
+    return path.startswith(_HDFS_PREFIX)
 
 def md5_encode(path: str) -> str:
     return hashlib.md5(path.encode()).hexdigest()
@@ -86,3 +88,26 @@ def copy_local_path_from_hdfs(src: str, cache_dir=None, filelock='.file.lock', v
         return local_path
     else:
         return src
+
+def copy_to_local(
+    src: str, cache_dir=None, filelock=".file.lock", verbose=False, always_recopy=False, use_shm: bool = False
+) -> str:
+    """Copy files/directories from HDFS to local cache with validation.
+
+    Args:
+        src (str): Source path - HDFS path (hdfs://...) or local filesystem path
+        cache_dir (str, optional): Local directory for cached files. Uses system tempdir if None
+        filelock (str): Base name for file lock. Defaults to ".file.lock"
+        verbose (bool): Enable copy operation logging. Defaults to False
+        always_recopy (bool): Force fresh copy ignoring cache. Defaults to False
+        use_shm (bool): Enable shared memory copy. Defaults to False
+
+    Returns:
+        str: Local filesystem path to copied resource
+    """
+    # Save to a local path for persistence.
+    local_path = copy_local_path_from_hdfs(src, cache_dir, filelock, verbose, always_recopy)
+    # Load into shm to improve efficiency.
+    if use_shm:
+        return copy_to_shm(local_path)
+    return local_path
