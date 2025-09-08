@@ -106,7 +106,7 @@ def copy_to_local(
         str: Local filesystem path to copied resource
     """
     # Save to a local path for persistence.
-    local_path = copy_local_path_from_hdfs(src, cache_dir, filelock, verbose, always_recopy)
+    local_path = copy_local_path_from_hdfs(src, cache_dir, filelock, verbose)
     # Load into shm to improve efficiency.
     if use_shm:
         return copy_to_shm(local_path)
