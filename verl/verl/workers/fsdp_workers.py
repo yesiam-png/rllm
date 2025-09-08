@@ -38,6 +38,7 @@ from verl.utils.import_utils import import_external_libs
 from verl.utils.model import compute_position_id_with_mask
 from verl.utils.flops_counter import FlopsCounter
 from verl.workers.sharding_manager.fsdp_ulysses import FSDPUlyssesShardingManager
+from verl.utils.checkpoint.fsdp_checkpoint_manager import FSDPCheckpointManager
 
 from codetiming import Timer
 
@@ -392,7 +393,26 @@ class ActorRolloutRefWorker(Worker):
 
         if self._is_actor:
             self.flops_counter = FlopsCounter(self.actor_model_config)
+            self.checkpoint_manager = FSDPCheckpointManager(
+                model=self.actor_module_fsdp,
+                optimizer=self.actor.actor_optimizer,
+                lr_scheduler=self.actor_lr_scheduler,
+                processing_class=self.tokenizer,
+#                checkpoint_config=self.config.actor.checkpoint,
+            )
 
+        if not self._is_actor and self._is_rollout:
+            # If ActorRolloutRefWorker is initialized as a standalone rollout,
+            # create a checkpoint manager for FSDP model to allow loading FSDP checkpoints for rollout.
+
+            checkpoint_contents = OmegaConf.create({"load_contents": ["model"], "save_contents": []})
+            self.checkpoint_manager = FSDPCheckpointManager(
+                model=self.actor_module_fsdp,
+                optimizer=None,
+                lr_scheduler=None,
+                processing_class=self.tokenizer,
+               # checkpoint_config=checkpoint_contents,
+            )
         torch.cuda.empty_cache()
 
     @register(dispatch_mode=Dispatch.DP_COMPUTE_PROTO)
@@ -527,14 +547,17 @@ class ActorRolloutRefWorker(Worker):
         return output
 
     @register(dispatch_mode=Dispatch.ONE_TO_ALL)
-    def save_checkpoint(self, local_path, hdfs_path=None):
+    def save_checkpoint(self, local_path, hdfs_path=None, global_step=0):
         assert self._is_actor
         import torch
         if self._is_offload_param:
             load_fsdp_param_and_grad(module=self.actor_module_fsdp,
                                      device_id=torch.cuda.current_device(),
                                      load_grad=self._is_offload_grad)
-
+        self.checkpoint_manager.save_checkpoint(
+            local_path=local_path, hdfs_path=hdfs_path, global_step=global_step, max_ckpt_to_keep=None
+        )
+        """
         # TODO: support DCP and save sharded checkpoints
         import torch.distributed
         from torch.distributed.fsdp import FullyShardedDataParallel as FSDP, StateDictType, FullStateDictConfig
@@ -550,11 +573,31 @@ class ActorRolloutRefWorker(Worker):
                 print(f'Uploading actor checkpoint to {hdfs_path}')
                 hdfs_io.makedirs(hdfs_path, exist_ok=True)
                 hdfs_io.copy(src=local_path, dst=hdfs_path)
-
+        """
         torch.distributed.barrier()
         if self._is_offload_param:
             offload_fsdp_param_and_grad(module=self.actor_module_fsdp, offload_grad=self._is_offload_grad)
 
+    @register(dispatch_mode=Dispatch.ONE_TO_ALL)
+    def load_checkpoint(self, local_path, hdfs_path=None, del_local_after_load=False):
+        assert self._is_actor or (not self._is_actor and self._is_rollout), (
+            f"Checkpoint loading is only supported for Actor or standalone Rollout Workers, but got "
+            f"{self._is_actor} and {self._is_rollout}"
+        )
+
+        if self._is_offload_param:
+            load_fsdp_param_and_grad(module=self.actor_module_fsdp,
+                                     device_id=torch.cuda.current_device(),
+                                     load_grad=self._is_offload_grad)
+        self.checkpoint_manager.load_checkpoint(
+            local_path=local_path, hdfs_path=hdfs_path, del_local_after_load=del_local_after_load
+        )
+
+        if self._is_offload_param:
+            offload_fsdp_param_and_grad(module=self.actor_module_fsdp, offload_grad=self._is_offload_grad)
+
+        if self._is_offload_optimizer:
+            offload_fsdp_optimizer(self.actor_optimizer)
 
 class CriticWorker(Worker):
 

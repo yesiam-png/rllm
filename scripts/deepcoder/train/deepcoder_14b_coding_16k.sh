@@ -31,7 +31,7 @@ python3 -m verl.trainer.main_ppo \
     data.train_batch_size=128 \
     data.val_batch_size=512 \
     data.max_prompt_length=1024 \
-    data.max_response_length=1024 \
+    data.max_response_length=800 \
     actor_rollout_ref.model.path=$MODEL_PATH \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.model.enable_gradient_checkpointing=True \
@@ -55,7 +55,7 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.tensor_model_parallel_size=1 \
     actor_rollout_ref.rollout.name=vllm \
     actor_rollout_ref.rollout.temperature=0.6 \
-    actor_rollout_ref.rollout.val_temperature=0.0 \
+    actor_rollout_ref.rollout.val_temperature=0.01 \
     actor_rollout_ref.rollout.gpu_memory_utilization=0.8 \
     actor_rollout_ref.rollout.n=4 \
     actor_rollout_ref.rollout.n_val=2 \
@@ -65,7 +65,7 @@ python3 -m verl.trainer.main_ppo \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name='rlvr-sep6' \
-    trainer.experiment_name='rl-40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400-lcbformat-0temp' \
+    trainer.experiment_name='rl-40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400-lcb' \
     +trainer.val_before_train=True \
     trainer.n_gpus_per_node=8 \
     trainer.nnodes=1 \

@@ -34,6 +34,8 @@ from verl.single_controller.ray import RayResourcePool, RayWorkerGroup, RayClass
 from verl.single_controller.ray.base import create_colocated_worker_cls
 from verl.trainer.ppo import core_algos
 from verl.utils.seqlen_balancing import get_seqlen_balanced_partitions, log_seqlen_unbalance
+from torchdata.stateful_dataloader import StatefulDataLoader
+from verl.utils.checkpoint.checkpoint_manager import find_latest_ckpt_path, should_save_ckpt_esi
 
 
 WorkerType = Type[Worker]
@@ -350,7 +352,28 @@ class RayPPOTrainer(object):
         self._create_dataloader()
 
     def _create_dataloader(self):
-        from torch.utils.data import DataLoader
+        def create_rl_sampler(dataset, shuffle):
+            """Create a sampler for the dataset.
+
+            Arguments:
+                data_config: The data config.
+                dataset (Dataset): The dataset.
+
+            Returns:
+                sampler (Sampler): The sampler.
+            """
+            import torch
+            from torch.utils.data import RandomSampler, SequentialSampler
+            if shuffle:
+                train_dataloader_generator = torch.Generator()
+                train_dataloader_generator.manual_seed(1)
+                sampler = RandomSampler(data_source=dataset, generator=train_dataloader_generator)
+            else:
+                # If shuffling is disabled, use a sequential sampler to iterate through the dataset in order.
+                sampler = SequentialSampler(data_source=dataset)
+
+            return sampler
+        #from torch.utils.data import DataLoader
         # TODO: we have to make sure the batch size is divisible by the dp size
         from verl.utils.dataset.rl_dataset import RLHFDataset, collate_fn
         self.train_dataset = RLHFDataset(parquet_files=self.config.data.train_files,
@@ -364,11 +387,15 @@ class RayPPOTrainer(object):
         if self.config.trainer.rejection_sample:
             train_batch_size *= self.config.trainer.rejection_sample_multiplier
             train_batch_size = int(train_batch_size)
-        self.train_dataloader = DataLoader(dataset=self.train_dataset,
+        train_sampler = create_rl_sampler(self.train_dataset, True)
+        self.train_dataloader = StatefulDataLoader(dataset=self.train_dataset,
                                            batch_size=train_batch_size,
-                                           shuffle=True,
+                                           num_workers=1,
+                                          # shuffle=True,
                                            drop_last=True,
-                                           collate_fn=collate_fn)
+                                           collate_fn=collate_fn,
+                                           sampler=train_sampler,
+                                           )
 
         self.val_dataset = RLHFDataset(parquet_files=self.config.data.val_files,
                                        tokenizer=self.tokenizer,
@@ -377,10 +404,11 @@ class RayPPOTrainer(object):
                                        filter_prompts=True,
                                        return_raw_chat=self.config.data.get('return_raw_chat', False),
                                        truncation='error')
-        self.val_dataloader = DataLoader(dataset=self.val_dataset,
+        self.val_dataloader = StatefulDataLoader(dataset=self.val_dataset,
                                          batch_size=len(self.val_dataset),
-                                         shuffle=True,
-                                         drop_last=True,
+                                         num_workers=1,
+                                         shuffle=False,
+                                         drop_last=False,
                                          collate_fn=collate_fn)
 
         assert len(self.train_dataloader) >= 1
@@ -533,11 +561,21 @@ class RayPPOTrainer(object):
         self.actor_rollout_wg.init_model()
 
     def _save_checkpoint(self):
-        actor_local_path = os.path.join(self.config.trainer.default_local_dir, 'actor',
-                                        f'global_step_{self.global_steps}')
+        from verl.utils.fs import local_mkdir_safe
+
+        # path: given_path + `/global_step_{global_steps}` + `/actor`
+        local_global_step_folder = os.path.join(
+            self.config.trainer.default_local_dir, f"global_step_{self.global_steps}"
+        )
+
+        print(f"local_global_step_folder: {local_global_step_folder}")
+        actor_local_path = os.path.join(local_global_step_folder, "actor")
+
+       # actor_local_path = os.path.join(self.config.trainer.default_local_dir, 'actor',
+       #                                 f'global_step_{self.global_steps}')
         actor_remote_path = None if self.config.trainer.default_hdfs_dir is None else os.path.join(
             self.config.trainer.default_hdfs_dir, 'actor')
-        self.actor_rollout_wg.save_checkpoint(actor_local_path, actor_remote_path)
+        self.actor_rollout_wg.save_checkpoint(actor_local_path, actor_remote_path, self.global_steps)
 
         if self.use_critic:
             critic_local_path = os.path.join(self.config.trainer.default_local_dir, 'critic',
@@ -545,6 +583,63 @@ class RayPPOTrainer(object):
             critic_remote_path = None if self.config.trainer.default_hdfs_dir is None else os.path.join(
                 self.config.trainer.default_hdfs_dir, 'critic')
             self.critic_wg.save_checkpoint(critic_local_path, critic_remote_path)
+        # save dataloader
+        local_mkdir_safe(local_global_step_folder)
+        dataloader_local_path = os.path.join(local_global_step_folder, "data.pt")
+        dataloader_state_dict = self.train_dataloader.state_dict()
+        torch.save(dataloader_state_dict, dataloader_local_path)
+
+        # latest checkpointed iteration tracker (for atomic usage)
+        local_latest_checkpointed_iteration = os.path.join(
+            self.config.trainer.default_local_dir, "latest_checkpointed_iteration.txt"
+        )
+        with open(local_latest_checkpointed_iteration, "w") as f:
+            f.write(str(self.global_steps))
+
+    def _load_checkpoint(self):
+        # load from hdfs
+        if self.config.trainer.default_hdfs_dir is not None:
+            raise NotImplementedError("load from hdfs is not implemented yet")
+        else:
+            checkpoint_folder = self.config.trainer.default_local_dir  # TODO: check path
+            if not os.path.isabs(checkpoint_folder):
+                working_dir = os.getcwd()
+                checkpoint_folder = os.path.join(working_dir, checkpoint_folder)
+            global_step_folder = find_latest_ckpt_path(checkpoint_folder)  # None if no latest
+
+        # find global_step_folder
+        #if self.config.trainer.resume_mode == "auto":
+        if global_step_folder is None:
+            print("Training from scratch")
+            return 0
+
+        print(f"Load from checkpoint folder: {global_step_folder}")
+        # set global step
+        self.global_steps = int(global_step_folder.split("global_step_")[-1])
+
+        print(f"Setting global step to {self.global_steps}")
+        print(f"Resuming from {global_step_folder}")
+
+        actor_path = os.path.join(global_step_folder, "actor")
+        critic_path = os.path.join(global_step_folder, "critic")
+        # load actor
+        self.actor_rollout_wg.load_checkpoint(
+            actor_path, del_local_after_load=False
+        )
+        # load critic
+        if self.use_critic:
+            self.critic_wg.load_checkpoint(
+                critic_path, del_local_after_load=False
+            )
+
+        # load dataloader,
+        # TODO: from remote not implemented yet
+        dataloader_local_path = os.path.join(global_step_folder, "data.pt")
+        if os.path.exists(dataloader_local_path):
+            dataloader_state_dict = torch.load(dataloader_local_path, weights_only=False)
+            self.train_dataloader.load_state_dict(dataloader_state_dict)
+        else:
+            print(f"Warning: No dataloader state found at {dataloader_local_path}, will start from scratch")
 
     def _balance_batch(self, batch: DataProto, metrics, logging_prefix='global_seqlen'):
         """Reorder the data on single controller such that each dp rank gets similar total tokens"""
@@ -578,6 +673,9 @@ class RayPPOTrainer(object):
                           config=OmegaConf.to_container(self.config, resolve=True))
 
         self.global_steps = 0
+
+        # load checkpoint before doing anything
+        self._load_checkpoint()
 
         # perform validation before training
         if self.val_reward_fn is not None and self.config.trainer.get('val_before_train', True):
