@@ -20,7 +20,7 @@ done
 
 # Set default model path if not provided
 if [ -z "$MODEL_PATH" ]; then
-    MODEL_PATH="/mnt/task_runtime/40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400"
+    MODEL_PATH="/mnt/task_wrapper/40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400"
 fi
 
 # Train over 4 nodes, 8 A100-80GB GPUs per node.
