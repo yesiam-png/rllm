@@ -64,12 +64,12 @@ python3 -m verl.trainer.main_ppo \
     algorithm.mask_truncated_samples=True \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
-    trainer.project_name='rlvr-sep6' \
+    trainer.project_name='rlvr-sep6-debug' \
     trainer.experiment_name='rl-60-400-llama1b-10warmup-5penalty-log-005lenpenalty-2sync_step2000-areal' \
-    +trainer.val_before_train=True \
+    +trainer.val_before_train=False \
     trainer.n_gpus_per_node=8 \
     trainer.nnodes=1 \
-    trainer.save_freq=10 \
+    trainer.save_freq=1 \
     trainer.test_freq=10 \
     trainer.default_hdfs_dir=null \
     trainer.total_epochs=100 "${@:1}"

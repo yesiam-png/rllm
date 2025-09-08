@@ -111,3 +111,33 @@ def copy_to_local(
     if use_shm:
         return copy_to_shm(local_path)
     return local_path
+
+def local_mkdir_safe(path):
+    """_summary_
+    Thread-safe directory creation function that ensures the directory is created
+    even if multiple processes attempt to create it simultaneously.
+
+    Args:
+        path (str): The path to create a directory at.
+    """
+
+    from filelock import FileLock
+
+    if not os.path.isabs(path):
+        working_dir = os.getcwd()
+        path = os.path.join(working_dir, path)
+
+    # Using hash value of path as lock file name to avoid long file name
+    lock_filename = f"ckpt_{hash(path) & 0xFFFFFFFF:08x}.lock"
+    lock_path = os.path.join(tempfile.gettempdir(), lock_filename)
+
+    try:
+        with FileLock(lock_path, timeout=60):  # Add timeout
+            # make a new dir
+            os.makedirs(path, exist_ok=True)
+    except Exception as e:
+        print(f"Warning: Failed to acquire lock for {path}: {e}")
+        # Even if the lock is not acquired, try to create the directory
+        os.makedirs(path, exist_ok=True)
+
+    return path

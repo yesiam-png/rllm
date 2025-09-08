@@ -16,7 +16,7 @@ A Ray logger will receive logging info from different processes.
 """
 import numbers
 from typing import Dict
-
+import logging
 
 def concat_dict_to_str(dict: Dict, step):
     output = [f'step:{step}']
@@ -40,3 +40,17 @@ class LocalLogger:
     def log(self, data, step):
         if self.print_to_console:
             print(concat_dict_to_str(data, step=step), flush=True)
+
+def log_with_rank(message: str, rank, logger: logging.Logger, level=logging.INFO, log_only_rank_0: bool = False):
+    """_summary_
+    Log a message with rank information using a logger.
+    This function logs the message only if `log_only_rank_0` is False or if the rank is 0.
+    Args:
+        message (str): The message to log.
+        rank (int): The rank of the process.
+        logger (logging.Logger): The logger instance to use for logging.
+        level (int, optional): The logging level. Defaults to logging.INFO.
+        log_only_rank_0 (bool, optional): If True, only log for rank 0. Defaults to False.
+    """
+    if not log_only_rank_0 or rank == 0:
+        logger.log(level, f"[Rank {rank}] {message}")
