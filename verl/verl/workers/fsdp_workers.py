@@ -398,7 +398,7 @@ class ActorRolloutRefWorker(Worker):
                 optimizer=self.actor.actor_optimizer,
                 lr_scheduler=self.actor_lr_scheduler,
                 processing_class=self.tokenizer,
-                checkpoint_config=self.config.actor.checkpoint,
+#                checkpoint_config=self.config.actor.checkpoint,
             )
 
         if not self._is_actor and self._is_rollout:
@@ -411,7 +411,7 @@ class ActorRolloutRefWorker(Worker):
                 optimizer=None,
                 lr_scheduler=None,
                 processing_class=self.tokenizer,
-                checkpoint_config=checkpoint_contents,
+               # checkpoint_config=checkpoint_contents,
             )
         torch.cuda.empty_cache()
 
