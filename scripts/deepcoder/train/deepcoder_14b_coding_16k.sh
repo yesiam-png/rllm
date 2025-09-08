@@ -2,7 +2,7 @@
 set -x
 
 ulimit -n 1048576 
-export VLLM_ATTENTION_BACKEND=XFORMERS
+#export VLLM_ATTENTION_BACKEND=XFORMERS
 export VLLM_ENGINE_ITERATION_TIMEOUT_S=1000000000
 
 # Parse command line arguments
