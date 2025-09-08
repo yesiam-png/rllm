@@ -66,10 +66,10 @@ python3 -m verl.trainer.main_ppo \
     trainer.logger=['console','wandb'] \
     trainer.project_name='rlvr-sep6' \
     trainer.experiment_name='rl-llama1b-areal' \
-    +trainer.val_before_train=False \
+    +trainer.val_before_train=True \
     trainer.n_gpus_per_node=8 \
     trainer.nnodes=1 \
-    trainer.save_freq=1 \
+    trainer.save_freq=10 \
     trainer.test_freq=10 \
     trainer.default_hdfs_dir=null \
     trainer.total_epochs=100 "${@:1}"
