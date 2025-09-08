@@ -198,8 +198,9 @@ if __name__ == '__main__':
     test_datasets = [TestDataset.Code.LIVECODEBENCH, TestDataset.Code.CODEFORCES, TestDataset.Code.HUMANEVALPLUS]
     
     test_datasets_data = [load_dataset(d) for d in test_datasets]
-    train_dataset_data = [datasets.load_dataset(d)["train"] for d in train_datasets]
-    
+    shuffle_training_data = datasets.load_dataset(train_datasets[0])["train"].shuffle(seed=42)
+    train_dataset_data = [shuffle_training_data.select(range(6677))]
+
     # Print dataset sizes
     for test_dataset, data in zip(test_datasets, test_datasets_data):
         print(f"Test dataset {test_dataset.value}: {len(data)} examples")
@@ -243,3 +244,21 @@ if __name__ == '__main__':
         test_df = pd.DataFrame(test_data)
         test_df.to_parquet(os.path.join(local_dir, f'test_{dataset_name}.parquet'))
         test_df.to_json(os.path.join(local_dir, f'test_{dataset_name}.json'), orient='records')
+
+
+
+
+
+    # Process training data
+    process_fn = make_map_fn_train('test')
+    val_dataset_data = shuffle_training_data.select(range(6677, len(shuffle_training_data)))
+    val_data: List[Dict[str, Any]] = []
+    dataset_name = "areal" #train_dataset.value.lower()  # Extract name from enum
+    for idx, example in enumerate(val_dataset_data):
+        processed_example = process_fn(example, idx, dataset_name)
+        if not processed_example:
+            continue# Break here to inspect the problematic example
+        if processed_example is not None:
+            val_data.append(processed_example)
+    val_df = pd.DataFrame(val_data)
+    val_df.to_parquet(os.path.join(local_dir, f'val_{dataset_name}.parquet'))
