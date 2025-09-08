@@ -64,7 +64,7 @@ python3 -m verl.trainer.main_ppo \
     algorithm.mask_truncated_samples=True \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
-    trainer.project_name='rlvr-sep6' \
+    trainer.project_name='rlvr-sep8' \
     trainer.experiment_name='rl-40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400-areal' \
     +trainer.val_before_train=True \
     trainer.n_gpus_per_node=8 \
