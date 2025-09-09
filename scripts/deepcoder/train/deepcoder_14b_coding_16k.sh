@@ -35,6 +35,7 @@ EXPERIMENT='rl-40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400-lc
 
 # -------- First-run marker controls val_before_train --------
 STATE_DIR="$HOME/.cache/verl_run_state"
+rm -r "$STATE_DIR"
 mkdir -p "$STATE_DIR"
 STATE_FILE="$STATE_DIR/${PROJECT}__${EXPERIMENT}.first_run_done"
 
