@@ -23,13 +23,14 @@ try:
 except Exception:
     pass
 
-from .utils import BASE_IMPORTS
+# Robust BASE_IMPORTS import (works even if relative import fails in spawned child)
+BASE_IMPORTS = ""
 
 # ======================================================================================
 # Configuration
 # ======================================================================================
 
-OUTPUT_BYTE_CAP = 2_000_000        # 4 MB stdout cap
+OUTPUT_BYTE_CAP = 4_000_000        # 4 MB stdout cap
 MAX_LINES_CAP = 1000            # Max output lines allowed
 MAX_LINE_CHARS = 200_000           # Max characters per output line
 MAX_TOKENS_PER_LINE = 10_000       # Max tokens per line for numeric compare
@@ -300,10 +301,7 @@ def _child_setup(time_limit_sec: int, memory_bytes: int | None):
     except Exception:
         pass
     try:
-        # Preserve (or raise to) the higher of the current limit and 50k
-        cur = sys.getrecursionlimit()
-        target = max(cur, 50000)
-        sys.setrecursionlimit(target)
+        sys.setrecursionlimit(CHILD_RECURSION_LIMIT)
     except Exception:
         pass
     reliability_guard(memory_bytes)
@@ -327,138 +325,63 @@ def _try_numeric_line_compare(pred_line: str, gt_line: str):
         return False
     return dec_pred == dec_gt
 
-
-def _worker_call_based_suite_entry(q, code, fn_name, parsed_inputs, parsed_outputs, timeout):
-    """
-    Child-process entry: compile once, then run each test case with a per-case alarm.
-    Sends (all_results, metadata) back through the queue and exits.
-    all_results is a list of True/False/(-3)/(-4) mirroring original semantics:
-      - True  : correct
-      - False : wrong answer (and we return early with error_code -2)
-      - -3    : time limit exceeded (return early with error_code -3)
-      - -4    : runtime error (return early with error_code -4)
-    """
-    # Helper: bounded repr if available, otherwise fall back to truncatefn
-    def _sr(x):
-        try:
-            return safe_repr(x)   # present in the hardened file; ignored if not
-        except Exception:
-            return truncatefn(x)
-
-    # Set up child environment similarly to your original runner
+def _worker_call_based(code: str, fn_name: str, gt_inp, gt_out, timeout: int):
+    start = time.time()
     try:
-        # Per-process hardening (no memory cap here; use your reliability_guard signature)
-        reliability_guard()
-    except Exception:
-        pass
-
-    # Try to have a generous recursion limit if your BASE_IMPORTS does not set it
-    try:
-        cur = sys.getrecursionlimit()
-        if cur < 50000:
-            sys.setrecursionlimit(50000)
-    except Exception:
-        pass
-
-    # Compile once
-    try:
-        # Keep parity with original: prepend BASE_IMPORTS
-        compiled_sol = compile_code(BASE_IMPORTS + "\n" + code, timeout)
+        _child_setup(timeout, DEFAULT_MEMORY_BYTES)
+        code = BASE_IMPORTS + "\n" + code
+        compiled_sol = compile_code(code, timeout)
         method = get_function(compiled_sol, fn_name)
         if method is None:
-            q.put(([-4], {
-                "error_code": -4,
-                "error_message": "Method not found",
-            }))
-            return
+            return -4, {"error_code": -4, "error_message": "Method not found"}, 0.0
+
+        prediction = method(*gt_inp)
+        exec_time = time.time() - start
+
+        if isinstance(prediction, tuple):
+            prediction = list(prediction)
+      #  print("predictionn", prediction)
+      #  print("gt_out", gt_out)
+        if prediction == gt_out:
+            return True, {}, exec_time
+
+        return -2, {
+            "output": safe_repr(prediction),
+            "inputs": safe_repr(gt_inp),
+            "expected": safe_repr(gt_out),
+            "error_code": -2,
+            "error_message": "Wrong Answer",
+        }, exec_time
+
     except TimeoutException as e:
-        q.put(([-3], {
+        return -3, {
             "error": repr(e),
             "error_code": -3,
-            "error_message": "Time Limit Exceeded during compile",
-        }))
-        return
+            "error_message": "Time Limit Exceeded",
+            "inputs": safe_repr(gt_inp),
+            "expected": safe_repr(gt_out),
+        }, 0.0
+    except OutputTooLarge as e:
+        return -2, {
+            "error": repr(e),
+            "error_code": -2,
+            "error_message": "Wrong Answer: output too long",
+            "inputs": safe_repr(gt_inp),
+            "expected": safe_repr(gt_out),
+        }, 0.0
     except Exception as e:
-        q.put(([-4], {
+        return -4, {
             "error": repr(e),
             "error_code": -4,
-            "error_message": "Runtime Error during compile",
-        }))
-        return
-
-    all_results = []
-    total_execution = 0.0
-
-    # Run each test case with its own alarm
-    for gt_inp, gt_out in zip(parsed_inputs, parsed_outputs):
+            "error_message": "Runtime Error",
+            "inputs": safe_repr(gt_inp),
+            "expected": safe_repr(gt_out),
+        }, 0.0
+    finally:
         try:
-            try:
-                signal.signal(signal.SIGALRM, timeout_handler)
-                signal.alarm(max(1, int(timeout)))
-            except Exception:
-                # SIGALRM not available on some platforms; parent will still enforce a suite wall clock.
-                pass
-
-            start = time.time()
-            prediction = method(*gt_inp)
-            total_execution += time.time() - start
-
-            try:
-                signal.alarm(0)
-            except Exception:
-                pass
-
-            if isinstance(prediction, tuple):
-                prediction = list(prediction)
-
-            if prediction == gt_out:
-                all_results.append(True)
-                continue
-
-            # Wrong answer: return early, mirroring original behavior
-            all_results.append(False)
-            q.put((all_results, {
-                "output": _sr(prediction),
-                "inputs": _sr(gt_inp),
-                "expected": _sr(gt_out),
-                "error_code": -2,
-                "error_message": "Wrong Answer",
-            }))
-            return
-
-        except TimeoutException as e:
-            try:
-                signal.alarm(0)
-            except Exception:
-                pass
-            all_results.append(-3)
-            q.put((all_results, {
-                "error": repr(e),
-                "error_code": -3,
-                "error_message": "Time Limit Exceeded",
-                "inputs": _sr(gt_inp),
-                "expected": _sr(gt_out),
-            }))
-            return
-        except Exception as e:
-            try:
-                signal.alarm(0)
-            except Exception:
-                pass
-            all_results.append(-4)
-            q.put((all_results, {
-                "error": repr(e),
-                "error_code": -4,
-                "error_message": "Runtime Error",
-                "inputs": _sr(gt_inp),
-                "expected": _sr(gt_out),
-            }))
-            return
-
-    # All passed
-    q.put((all_results, {"execution time": total_execution}))
-
-
+            signal.alarm(0)
+        except Exception:
+            pass
 
 def _worker_stdio(code: str, gt_inp: str, gt_out: str, timeout: int):
     start = time.time()
@@ -595,55 +518,31 @@ def _spawn_and_run(target, args: tuple, timeout: int):
 # ======================================================================================
 
 def grade_call_based(code: str, all_inputs: list, all_outputs: list, fn_name: str, timeout: int):
-    """
-    Compile once and evaluate all call-based tests in a single child process.
-    - Keeps cross-test state (important for some user solutions).
-    - Returns early on first failure (same as original behavior).
-    - Results list contains True for passes, False for first WA, or -3/-4 for TLE/RE.
-    - Metadata matches original keys (error_code, error_message, inputs, expected) or
-      {"execution time": total_seconds} if all pass.
-    """
-    # Parse inputs/outputs exactly like your original implementation
-    parsed_inputs = [[json.loads(line) for line in inputs.split("\n")] for inputs in all_inputs]
-    parsed_outputs = [json.loads(output) for output in all_outputs]
+    all_inputs = [[json.loads(line) for line in inputs.split("\n")] for inputs in all_inputs]
+    all_outputs = [json.loads(output) for output in all_outputs]
 
-    # Prefer fork on POSIX (keeps import context); fall back to spawn elsewhere
-    try:
-        ctx = multiprocessing.get_context("fork")
-    except ValueError:
-        ctx = multiprocessing.get_context("spawn")
+    total_execution = 0.0
+    all_results = []
 
-    q = ctx.Queue(maxsize=1)
-    p = ctx.Process(
-        target=_worker_call_based_suite_entry,
-        args=(q, code, fn_name, parsed_inputs, parsed_outputs, timeout),
-    )
+    for gt_inp, gt_out in zip(all_inputs, all_outputs):
+        flag, payload, exec_time = _spawn_and_run(
+            _worker_call_based, (code, fn_name, gt_inp, gt_out, timeout), timeout
+        )
+        if flag is True:
+            all_results.append(True)
+            total_execution += exec_time
+            continue
 
-    # Wall-clock budget for the whole suite
-    suite_timeout = max(1, int(timeout)) * max(1, len(parsed_inputs)) + 2
+        all_results.append(flag)
+        if "error_message" not in payload and flag == -2:
+            payload["error_message"] = "Wrong Answer"
+        if "inputs" not in payload:
+            payload["inputs"] = truncatefn(gt_inp)
+        if "expected" not in payload:
+            payload["expected"] = truncatefn(gt_out)
+        return all_results, payload
 
-    p.start()
-    p.join(suite_timeout)
-
-    if p.is_alive():
-        # Kill runaway child (e.g., platform without SIGALRM)
-        try:
-            p.kill()
-        except Exception:
-            pass
-        return [-3], {
-            "error_code": -3,
-            "error_message": "Time Limit Exceeded (suite)"
-        }
-
-    try:
-        results, meta = q.get_nowait()
-        return results, meta
-    except queue.Empty:
-        return [-4], {
-            "error_code": -4,
-            "error_message": "No result from worker"
-        }
+    return all_results, {"execution time": total_execution}
 
 def grade_stdio(code: str, all_inputs: list, all_outputs: list, timeout: int):
     all_results = []
