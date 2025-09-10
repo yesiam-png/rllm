@@ -42,7 +42,7 @@ STATE_FILE="$STATE_DIR/${PROJECT}__${EXPERIMENT}.first_run_done"
 if [[ -f "$STATE_FILE" ]]; then
   VAL_FLAG="trainer.val_before_train=False"
 else
-  VAL_FLAG="trainer.val_before_train=True"
+  VAL_FLAG="trainer.val_before_train=False"
   : > "$STATE_FILE"   # mark now so any retry or future invocation flips to False
 fi
 

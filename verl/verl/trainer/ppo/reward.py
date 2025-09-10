@@ -161,9 +161,12 @@ def compute_reward(data: DataProto, reward_fn: AbstractRewardManager) -> tuple[t
         Tuple of reward tensor and extra info dictionary.
     """
     try:
-        reward_result = reward_fn(data)
-        reward_tensor = reward_result["reward_tensor"]
-        reward_extra_infos_dict = reward_result.get("reward_extra_info", {})
+        reward_tensor = reward_fn(data)
+       # reward_tensor = reward_result["reward_tensor"]
+       # reward_extra_infos_dict = reward_result.get("reward_extra_info", {})
+        scores = reward_tensor.sum(-1).cpu().tolist()
+        reward_extra_infos_dict = {}
+        reward_extra_infos_dict["reward"].extend(scores)
     except Exception as e:
         print(f"Error in reward_fn: {e}")
         reward_tensor = reward_fn(data)
