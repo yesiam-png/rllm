@@ -30,7 +30,7 @@ if [[ -z "${MODEL_PATH:-}" ]]; then
     MODEL_PATH="/mnt/task_wrapper/40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400"
 fi
 
-PROJECT='rlvr-sep9'
+PROJECT='rlvr-sep10'
 EXPERIMENT='rl-40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400-lcb'
 
 # -------- First-run marker controls val_before_train --------
@@ -82,7 +82,7 @@ actor_rollout_ref.rollout.tensor_model_parallel_size=1 \
 actor_rollout_ref.rollout.name=vllm \
 actor_rollout_ref.rollout.temperature=0.6 \
 actor_rollout_ref.rollout.val_kwargs.do_sample=False \
-actor_rollout_ref.rollout.val_kwargs.temperature=0.0 \
+actor_rollout_ref.rollout.val_kwargs.temperature=0.00 \
 actor_rollout_ref.rollout.gpu_memory_utilization=0.8 \
 actor_rollout_ref.rollout.n=4 \
 actor_rollout_ref.ref.fsdp_config.param_offload=True \
