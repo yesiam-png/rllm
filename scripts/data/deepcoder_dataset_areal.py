@@ -199,7 +199,7 @@ if __name__ == '__main__':
     
     test_datasets_data = [load_dataset(d) for d in test_datasets]
     shuffle_training_data = datasets.load_dataset(train_datasets[0])["train"].shuffle(seed=42)
-    train_dataset_data = [shuffle_training_data.select(range(7177))]
+    train_dataset_data = [shuffle_training_data.select(range(7377))]
 
     # Print dataset sizes
     for test_dataset, data in zip(test_datasets, test_datasets_data):
@@ -251,7 +251,7 @@ if __name__ == '__main__':
 
     # Process training data
     process_fn = make_map_fn_train('test')
-    val_dataset_data = shuffle_training_data.select(range(7177, len(shuffle_training_data)))
+    val_dataset_data = shuffle_training_data.select(range(7377, len(shuffle_training_data)))
     val_data: List[Dict[str, Any]] = []
     dataset_name = "areal" #train_dataset.value.lower()  # Extract name from enum
     for idx, example in enumerate(val_dataset_data):

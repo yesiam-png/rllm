@@ -28,9 +28,7 @@ from torch.distributed.fsdp import ShardedOptimStateDictConfig, ShardedStateDict
 from transformers import GenerationConfig, PreTrainedTokenizer, ProcessorMixin
 from transformers.dynamic_module_utils import custom_object_save
 
-#from verl.utils.device import is_cuda_available
-is_cuda_available = torch.cuda.is_available()
-
+from verl.utils.device import is_cuda_available
 from verl.utils.fs import copy_to_local, is_non_local, local_mkdir_safe
 from verl.utils.fsdp_utils import fsdp_version, get_fsdp_full_state_dict, get_fsdp_state_ctx
 from verl.utils.logger import log_with_rank
@@ -80,7 +78,7 @@ class FSDPCheckpointManager(BaseCheckpointManager):
         optimizer: Optional[torch.optim.Optimizer] = None,
         lr_scheduler: Optional[torch.optim.lr_scheduler.LRScheduler] = None,
         processing_class: PreTrainedTokenizer | ProcessorMixin = None,
-      #  checkpoint_config: DictConfig = None,
+        checkpoint_config: DictConfig = None,
         **kwargs,
     ):
         if processing_class is None:
@@ -95,7 +93,7 @@ class FSDPCheckpointManager(BaseCheckpointManager):
             optimizer,
             lr_scheduler=lr_scheduler,
             processing_class=processing_class,
-          #  checkpoint_config=checkpoint_config,
+            checkpoint_config=checkpoint_config,
         )
 
     def load_checkpoint(self, local_path: str, hdfs_path: str = None, del_local_after_load=False):
