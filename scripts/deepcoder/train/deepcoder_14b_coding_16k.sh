@@ -30,7 +30,7 @@ if [[ -z "${MODEL_PATH:-}" ]]; then
     MODEL_PATH="/mnt/task_wrapper/40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400"
 fi
 
-PROJECT='rlvr-sep11_debug'
+PROJECT='rlvr-sep11'
 EXPERIMENT='rl-40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400-lcb'
 
 # -------- First-run marker controls val_before_train --------
@@ -54,7 +54,7 @@ delay=5            # seconds; will back off up to 300s
 python3 -m verl.trainer.main_ppo \
 algorithm.adv_estimator=grpo \
 data.train_files="$HOME/rllm/data/deepcoder_train.parquet" \
-data.val_files=[$HOME/rllm/data/test_livecodebench.parquet] \
+data.val_files=[$HOME/rllm/data/test_codeforces.parquet,$HOME/rllm/data/test_livecodebench.parquet] \
 data.train_batch_size=128 \
 data.val_batch_size=512 \
 data.max_prompt_length=2048 \
