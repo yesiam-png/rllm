@@ -30,7 +30,7 @@ if [[ -z "${MODEL_PATH:-}" ]]; then
     MODEL_PATH="/mnt/task_wrapper/40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400"
 fi
 
-PROJECT='rlvr-sep10'
+PROJECT='rlvr-sep11_new'
 EXPERIMENT='rl-40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400-areal'
 
 # -------- First-run marker controls val_before_train --------
