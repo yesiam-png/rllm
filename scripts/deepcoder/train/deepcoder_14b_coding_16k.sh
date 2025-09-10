@@ -30,7 +30,7 @@ if [[ -z "${MODEL_PATH:-}" ]]; then
     MODEL_PATH="/root/.cache/huggingface/hub/models--Qwen--Qwen2.5-1.5B/snapshots/8faed761d45a263340a0528343f099c05c9a4323"
 fi
 
-PROJECT='rlvr-sep10'
+PROJECT='rlvr-sep11_new'
 EXPERIMENT='rl-qwen15-lcb'
 
 # -------- First-run marker controls val_before_train --------
@@ -42,7 +42,7 @@ STATE_FILE="$STATE_DIR/${PROJECT}__${EXPERIMENT}.first_run_done"
 if [[ -f "$STATE_FILE" ]]; then
   VAL_FLAG="trainer.val_before_train=False"
 else
-  VAL_FLAG="trainer.val_before_train=False"
+  VAL_FLAG="trainer.val_before_train=True"
   : > "$STATE_FILE"   # mark now so any retry or future invocation flips to False
 fi
 
