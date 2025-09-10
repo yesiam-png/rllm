@@ -27,11 +27,11 @@ done
 
 # -------- Defaults --------
 if [[ -z "${MODEL_PATH:-}" ]]; then
-    MODEL_PATH="/mnt/task_wrapper/40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400"
+    MODEL_PATH="/root/.cache/huggingface/hub/models--Qwen--Qwen2.5-1.5B/snapshots/8faed761d45a263340a0528343f099c05c9a4323"
 fi
 
 PROJECT='rlvr-sep10'
-EXPERIMENT='rl-40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400-lcb'
+EXPERIMENT='rl-qwen15-lcb'
 
 # -------- First-run marker controls val_before_train --------
 STATE_DIR="$HOME/.cache/verl_run_state"
