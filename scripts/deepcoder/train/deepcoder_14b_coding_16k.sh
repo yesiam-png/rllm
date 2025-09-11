@@ -27,7 +27,7 @@ fi
 python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
     data.train_files=$HOME/rllm/data/deepcoder_train.parquet \
-    data.val_files=[$HOME/rllm/data/test_codeforces.parquet,$HOME/rllm/data/test_livecodebench.parquet] \
+    data.val_files=[$HOME/rllm/data/test_codeforces.parquet,$HOME/rllm/data/test_livecodebench.parquet,$HOME/rllm/data/val_areal.parquet] \
     data.train_batch_size=128 \
     data.val_batch_size=512 \
     data.max_prompt_length=1024 \
@@ -55,7 +55,7 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.tensor_model_parallel_size=1 \
     actor_rollout_ref.rollout.name=vllm \
     actor_rollout_ref.rollout.temperature=0.6 \
-    actor_rollout_ref.rollout.val_temperature=0.1 \
+    actor_rollout_ref.rollout.val_temperature=0.01 \
     actor_rollout_ref.rollout.gpu_memory_utilization=0.8 \
     actor_rollout_ref.rollout.n=4 \
     actor_rollout_ref.rollout.n_val=2 \
@@ -65,7 +65,7 @@ python3 -m verl.trainer.main_ppo \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name='rlvr-sep11' \
-    trainer.experiment_name='rl-40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400-lcbformat-01temp' \
+    trainer.experiment_name='rl-40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400-arealformat-1024-001temp' \
     +trainer.val_before_train=True \
     trainer.n_gpus_per_node=8 \
     trainer.nnodes=1 \
