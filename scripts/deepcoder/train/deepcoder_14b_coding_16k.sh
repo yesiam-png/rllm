@@ -30,8 +30,8 @@ if [[ -z "${MODEL_PATH:-}" ]]; then
     MODEL_PATH="/mnt/task_wrapper/40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400"
 fi
 
-PROJECT='rlvr-sep11_new'
-EXPERIMENT='rl-40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400-areal'
+PROJECT='rlvr-sep12'
+EXPERIMENT='rl-40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400-areal-temp0'
 
 # -------- First-run marker controls val_before_train --------
 STATE_DIR="$HOME/.cache/verl_run_state"
@@ -58,7 +58,7 @@ data.val_files="[$HOME/rllm/data/test_codeforces.parquet,$HOME/rllm/data/test_li
 data.train_batch_size=128 \
 data.val_batch_size=512 \
 data.max_prompt_length=2048 \
-data.max_response_length=800 \
+data.max_response_length=1024 \
 actor_rollout_ref.model.path="$MODEL_PATH" \
 actor_rollout_ref.model.use_remove_padding=True \
 actor_rollout_ref.model.enable_gradient_checkpointing=True \
@@ -83,6 +83,7 @@ actor_rollout_ref.rollout.name=vllm \
 actor_rollout_ref.rollout.temperature=0.6 \
 actor_rollout_ref.rollout.val_kwargs.do_sample=False \
 actor_rollout_ref.rollout.val_kwargs.temperature=0.00 \
+actor_rollout_ref.rollout.val_kwargs.n=1 \
 actor_rollout_ref.rollout.gpu_memory_utilization=0.8 \
 actor_rollout_ref.rollout.n=4 \
 actor_rollout_ref.ref.fsdp_config.param_offload=True \
