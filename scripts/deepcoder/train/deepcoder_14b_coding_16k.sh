@@ -27,11 +27,11 @@ done
 
 # -------- Defaults --------
 if [[ -z "${MODEL_PATH:-}" ]]; then
-    MODEL_PATH="/mnt/task_wrapper/40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400"
+    MODEL_PATH="/mnt/task_wrapper/rl-40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400-areal-1024-temp0/global_step_10"
 fi
 
-PROJECT='rlvr-sep12'
-EXPERIMENT='rl-40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400-areal-temp0'
+PROJECT='rlvr-sep12-evalonly'
+EXPERIMENT='rl-40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400-areal-1024-temp0'
 
 # -------- First-run marker controls val_before_train --------
 STATE_DIR="$HOME/.cache/verl_run_state"
@@ -57,7 +57,7 @@ data.train_files="$HOME/rllm/data/deepcoder_train.parquet" \
 data.val_files="[$HOME/rllm/data/test_codeforces.parquet,$HOME/rllm/data/test_livecodebench.parquet,$HOME/rllm/data/val_areal.parquet]" \
 data.train_batch_size=128 \
 data.val_batch_size=512 \
-data.max_prompt_length=2048 \
+data.max_prompt_length=1024 \
 data.max_response_length=1024 \
 actor_rollout_ref.model.path="$MODEL_PATH" \
 actor_rollout_ref.model.use_remove_padding=True \
