@@ -356,7 +356,6 @@ class vLLMRollout(BaseRollout):
 
         # users can customize different sampling_params at different run
         with self.update_sampling_params(**kwargs):
-            assert "codegemma" in self.model_path
             if "codegemma" in self.model_path:
                 vllm_inputs = self.tokenizer.batch_decode([vllm_input["prompt_token_ids"] for vllm_input in vllm_inputs])
             outputs = self.inference_engine.generate(
