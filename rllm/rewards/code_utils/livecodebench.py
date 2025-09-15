@@ -232,8 +232,8 @@ def grade_call_based(
             start = time.time()
             prediction = method(*gt_inp)
 
-          #  print("predictionnn", prediction)
-          #  print("gt_outtt", gt_out) 
+            #print("predictionnn", prediction)
+           # print("gt_outtt", gt_out) 
             total_execution += time.time() - start
             signal.alarm(0)
 
@@ -257,7 +257,7 @@ def grade_call_based(
                     "error_message": "Wrong Answer",
                 }
         except Exception as e:
-          #  print("wwwww", e)
+           # print("wwwww", e)
             signal.alarm(0)
             if "timeoutexception" in repr(e).lower():
                 all_results.append(-3)
@@ -360,8 +360,8 @@ def grade_stdio(
 
         stripped_prediction_lines = get_stripped_lines(prediction)
         stripped_gt_out_lines = get_stripped_lines(gt_out)
-      #  print("stripped_prediction_lines", stripped_prediction_lines)
-      #  print("stripped_gt_out_lines", stripped_gt_out_lines)
+     #   print("stripped_prediction_lines", stripped_prediction_lines)
+     #   print("stripped_gt_out_lines", stripped_gt_out_lines)
         ## WA happens in multiple circumstances
         ## so cache the return to make it clean!
         WA_send_args = {
@@ -431,7 +431,7 @@ def run_test(sample, test=None, debug=False, timeout=3):
     try:
         in_outs = json.loads(sample["input_output"])
     except ValueError as e:
-       # print("zzzz")
+      #  print("zzzz")
         raise e
         in_outs = None
 

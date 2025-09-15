@@ -47,7 +47,7 @@ def extract_code_from_model(model_response: str, response_only: str):
     Returns:
         str: The extracted code, or an empty string if no code block is found.
     """
-    stop=["\nclass", "\nassert", '\n"""', "\nprint", "\nif", "\n<|/", "\n```", "\n#", "\ndef", "\nfor", "\nwhile", "\n@", "\nExample", "\n-", "\n```", "\nsolve", "<|endoftext|>", "<|end_of_text|>"]
+    stop=["\nclass", "\nassert", '\n"""', "\nprint", "\nif", "\n<|/", "\n```", "\n#", "\ndef", "\nfor", "\nwhile", "\n@", "\nExample", "\n-", "\n```", "\nsolve", "<|endoftext|>", "<|end_of_text|>", "<eos>"]
     #print("response_only", response_only)
     response_only = trim_after_stop(response_only, stop)
 

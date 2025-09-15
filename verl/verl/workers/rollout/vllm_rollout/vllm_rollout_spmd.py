@@ -97,7 +97,8 @@ class vLLMRollout(BaseRollout):
         super().__init__(config, model_config, device_mesh)
 
         model_path = model_config.local_path
-        tokenizer = model_config.tokenizer
+        self.model_path = model_path
+        self.tokenizer = model_config.tokenizer
         model_hf_config = model_config.hf_config
         trust_remote_code = model_config.trust_remote_code
         self.lora_kwargs = (
@@ -177,30 +178,54 @@ class vLLMRollout(BaseRollout):
                 )
             else:
                 logger.warning(f"cudagraph_capture_sizes must be a list, but got {cudagraph_capture_sizes}")
-
-        self.inference_engine = LLM(
-            model=model_path,
-            enable_sleep_mode=config.free_cache_engine,
-            tensor_parallel_size=tensor_parallel_size,
-            distributed_executor_backend="external_launcher",
-            dtype=config.dtype,
-            enforce_eager=config.enforce_eager,
-            gpu_memory_utilization=config.gpu_memory_utilization,
-            disable_custom_all_reduce=True,
-            skip_tokenizer_init=False,
-            max_model_len=max_model_len,
-            max_num_seqs=config.max_num_seqs,
-            load_format=load_format,
-            disable_log_stats=config.disable_log_stats,
-            max_num_batched_tokens=max_num_batched_tokens,
-            enable_chunked_prefill=config.enable_chunked_prefill,
-            enable_prefix_caching=config.enable_prefix_caching,
-            trust_remote_code=trust_remote_code,
-            seed=config.get("seed", 0),
-            **compilation_config,
-            **self.lora_kwargs,
-            **engine_kwargs,
-        )
+        if "codegemma" in model_path:
+            self.inference_engine = LLM(
+                model=model_path,                
+                enable_sleep_mode=config.free_cache_engine,
+                tensor_parallel_size=tensor_parallel_size,
+                distributed_executor_backend="external_launcher",
+                dtype=config.dtype,
+                enforce_eager=config.enforce_eager,
+                gpu_memory_utilization=config.gpu_memory_utilization,
+                disable_custom_all_reduce=True,
+              #  skip_tokenizer_init=False,
+                max_model_len=max_model_len,
+                max_num_seqs=config.max_num_seqs,
+              #  load_format=load_format,
+               # disable_log_stats=config.disable_log_stats,
+               # max_num_batched_tokens=max_num_batched_tokens,
+               # enable_chunked_prefill=config.enable_chunked_prefill,
+               # enable_prefix_caching=config.enable_prefix_caching,
+                trust_remote_code=trust_remote_code,
+                seed=config.get("seed", 0),
+             #   **compilation_config,
+             #   **self.lora_kwargs,
+                #**engine_kwargs,
+                )
+        else:
+            self.inference_engine = LLM(
+                model=model_path,
+                enable_sleep_mode=config.free_cache_engine,
+                tensor_parallel_size=tensor_parallel_size,
+                distributed_executor_backend="external_launcher",
+                dtype=config.dtype,
+                enforce_eager=config.enforce_eager,
+                gpu_memory_utilization=config.gpu_memory_utilization,
+                disable_custom_all_reduce=True,
+                skip_tokenizer_init=False,
+                max_model_len=max_model_len,
+                max_num_seqs=config.max_num_seqs,
+                load_format=load_format,
+                disable_log_stats=config.disable_log_stats,
+                max_num_batched_tokens=max_num_batched_tokens,
+                enable_chunked_prefill=config.enable_chunked_prefill,
+                enable_prefix_caching=config.enable_prefix_caching,
+                trust_remote_code=trust_remote_code,
+                seed=config.get("seed", 0),
+                **compilation_config,
+                **self.lora_kwargs,
+                **engine_kwargs,
+            )
 
         kwargs = dict(
             n=1,
@@ -220,7 +245,7 @@ class vLLMRollout(BaseRollout):
         print(f"kwargs: {kwargs}")
         self.sampling_params = SamplingParams(**kwargs)
 
-        self.pad_token_id = tokenizer.pad_token_id
+        self.pad_token_id = self.tokenizer.pad_token_id
 
     @contextmanager
     def update_sampling_params(self, **kwargs):
@@ -331,13 +356,15 @@ class vLLMRollout(BaseRollout):
 
         # users can customize different sampling_params at different run
         with self.update_sampling_params(**kwargs):
+            assert "codegemma" in self.model_path
+            if "codegemma" in self.model_path:
+                vllm_inputs = self.tokenizer.batch_decode([vllm_input["prompt_token_ids"] for vllm_input in vllm_inputs])
             outputs = self.inference_engine.generate(
                 prompts=vllm_inputs,  # because we have already convert it to prompt token id
                 sampling_params=self.sampling_params,
                 lora_request=lora_requests,
                 use_tqdm=False,
             )
-
             # TODO(sgm): disable logprob when recompute_log_prob is enable
             # if n = 1: (bs, response_length) ; if n > 1: (bs * n, response_length)
 

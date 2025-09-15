@@ -76,7 +76,7 @@ class RewardManager():
             # decode
             sequences = torch.cat((valid_prompt_ids, valid_response_ids))
             sequences_str = self.tokenizer.decode(sequences)
-          #  print("sequences_strzzz", sequences_str)
+           # print("sequences_strzzz", sequences_str)
 
             prompt_only = self.tokenizer.decode(valid_prompt_ids)
             response_only = self.tokenizer.decode(valid_response_ids)
