@@ -59,7 +59,9 @@ from verl.utils.rollout_skip import RolloutSkip
 from verl.utils.seqlen_balancing import get_seqlen_balanced_partitions, log_seqlen_unbalance
 from verl.utils.torch_functional import masked_mean
 from verl.utils.tracking import ValidationGenerationsLogger
-
+import os
+import shutil
+import subprocess
 
 @dataclass
 class ResourcePoolManager:
@@ -804,6 +806,39 @@ class RayPPOTrainer:
         with open(local_latest_checkpointed_iteration, "w") as f:
             f.write(str(self.global_steps))
 
+        if ("codegemma" in self.config.actor_rollout_ref.model.path) and self.global_steps > 25:
+            # --- NEW: upload the just-saved checkpoint dir to S3 and delete local copy ---
+            # You can override this in your config: self.config.trainer.s3_base_uri
+            s3_base_uri = getattr(
+                self.config.trainer, "s3_base_uri", "s3://afm-common-permanent/shenao_zhang"
+            ).rstrip("/")
+
+            s3_dest = f"{s3_base_uri}/{self.config.trainer.experiment_name}/global_step_{self.global_steps - 2 * self.config.trainer.save_freq}"
+            print(f"Uploading checkpoint to S3: {s3_dest}")
+            old_local_global_step_folder = os.path.join(
+                self.config.trainer.default_local_dir, f"global_step_{self.global_steps - 2 * self.config.trainer.save_freq}"
+            )
+
+            try:
+                # Equivalent to: aws s3 cp <dir> s3://.../<dir> --recursive
+                result = subprocess.run(
+                    ["aws", "s3", "cp", old_local_global_step_folder.rstrip("/") + "/actor/huggingface", s3_dest, "--recursive"],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                if result.returncode != 0:
+                    print("S3 upload failed; keeping local checkpoint.")
+                    if result.stderr:
+                        print(result.stderr)
+                else:
+                    print("S3 upload succeeded; deleting local checkpoint to free space.")
+                    shutil.rmtree(old_local_global_step_folder)  # remove only the per-step folder
+            except FileNotFoundError:
+                print("AWS CLI not found; skipping S3 upload and deletion.")
+            except Exception as e:
+                print(f"Unexpected error during S3 upload; keeping local checkpoint. Error: {e}")
+
     def _load_checkpoint(self):
         if self.config.trainer.resume_mode == "disable":
             return 0
@@ -1162,82 +1197,4 @@ class RayPPOTrainer:
                             last_val_metrics = val_metrics
                     metrics.update(val_metrics)
 
-                # Check if the ESI (Elastic Server Instance)/training plan is close to expiration.
-                esi_close_to_expiration = should_save_ckpt_esi(
-                    max_steps_duration=self.max_steps_duration,
-                    redundant_time=self.config.trainer.esi_redundant_time,
-                )
-                # Check if the conditions for saving a checkpoint are met.
-                # The conditions include a mandatory condition (1) and
-                # one of the following optional conditions (2/3/4):
-                # 1. The save frequency is set to a positive value.
-                # 2. It's the last training step.
-                # 3. The current step number is a multiple of the save frequency.
-                # 4. The ESI(Elastic Server Instance)/training plan is close to expiration.
-                if self.config.trainer.save_freq > 0 and (
-                    is_last_step or self.global_steps % self.config.trainer.save_freq == 0 or esi_close_to_expiration
-                ):
-                    if esi_close_to_expiration:
-                        print("Force saving checkpoint: ESI instance expiration approaching.")
-                    with marked_timer("save_checkpoint", timing_raw, color="green"):
-                        self._save_checkpoint()
-
-                with marked_timer("stop_profile", timing_raw):
-                    next_step_profile = (
-                        self.global_steps + 1 in self.config.global_profiler.steps
-                        if self.config.global_profiler.steps is not None
-                        else False
-                    )
-                    self._stop_profiling(
-                        curr_step_profile and not next_step_profile
-                        if self.config.global_profiler.profile_continuous_steps
-                        else curr_step_profile
-                    )
-                    prev_step_profile = curr_step_profile
-                    curr_step_profile = next_step_profile
-
-                steps_duration = timing_raw["step"]
-                self.max_steps_duration = max(self.max_steps_duration, steps_duration)
-
-                # training metrics
-                metrics.update(
-                    {
-                        "training/global_step": self.global_steps,
-                        "training/epoch": epoch,
-                    }
-                )
-                # collect metrics
-                metrics.update(compute_data_metrics(batch=batch, use_critic=self.use_critic))
-                metrics.update(compute_timing_metrics(batch=batch, timing_raw=timing_raw))
-                # TODO: implement actual tflpo and theoretical tflpo
-                n_gpus = self.resource_pool_manager.get_n_gpus()
-                metrics.update(compute_throughout_metrics(batch=batch, timing_raw=timing_raw, n_gpus=n_gpus))
-
-                # this is experimental and may be changed/removed in the future in favor of a general-purpose one
-                if isinstance(self.train_dataloader.sampler, AbstractCurriculumSampler):
-                    self.train_dataloader.sampler.update(batch=batch)
-
-                # TODO: make a canonical logger that supports various backend
-                logger.log(data=metrics, step=self.global_steps)
-
-                progress_bar.update(1)
-                self.global_steps += 1
-
-                if (
-                    hasattr(self.config.actor_rollout_ref.actor, "profiler")
-                    and self.config.actor_rollout_ref.actor.profiler.tool == "torch_memory"
-                ):
-                    self.actor_rollout_wg.dump_memory_snapshot(
-                        tag=f"post_update_step{self.global_steps}", sub_dir=f"step{self.global_steps}"
-                    )
-
-                if is_last_step:
-                    pprint(f"Final validation metrics: {last_val_metrics}")
-                    progress_bar.close()
-                    return
-
-                # this is experimental and may be changed/removed in the future
-                # in favor of a general-purpose data buffer pool
-                if hasattr(self.train_dataset, "on_batch_end"):
-                    # The dataset may be changed after each training batch
-                    self.train_dataset.on_batch_end(batch=batch)
+                # Check if the ESI (Elastic Server Instance)/traini
