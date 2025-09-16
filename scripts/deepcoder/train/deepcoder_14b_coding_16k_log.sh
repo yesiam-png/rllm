@@ -89,7 +89,7 @@ run_one() {
     data.train_batch_size=128 \
     data.val_batch_size=512 \
     data.max_prompt_length="${L}" \
-    data.max_response_length="${L}" \
+    data.max_response_length=1024 \
     actor_rollout_ref.model.path="${model_path}" \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.model.enable_gradient_checkpointing=True \
