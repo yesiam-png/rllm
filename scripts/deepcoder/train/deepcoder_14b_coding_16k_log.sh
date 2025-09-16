@@ -24,9 +24,9 @@ EXPERIMENT='rl-40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400-ar
 LENGTHS=(1024 2048)
 
 # Evaluate these checkpoints:
-START=20
-END=300
-STEP=30
+START=0
+END=320
+STEP=10
 
 # GPUs: one job per GPU, 8 workers total
 NUM_WORKERS=8   # expects GPUs 0..7
