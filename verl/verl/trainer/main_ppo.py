@@ -370,7 +370,7 @@ class TaskRunner:
         reward_fn = PrimeRewardManager(tokenizer=tokenizer, num_examine=0, compute_score=rllm_reward_fn) #RewardManager(tokenizer=tokenizer, num_examine=0)
 
         # Note that we always use function-based RM for validation
-        val_reward_fn = PrimeRewardManager(tokenizer=tokenizer, num_examine=1, compute_score=rllm_reward_fn) #RewardManager(tokenizer=tokenizer, num_examine=1)
+        val_reward_fn = PrimeRewardManager(tokenizer=tokenizer, num_examine=0, compute_score=rllm_reward_fn) #RewardManager(tokenizer=tokenizer, num_examine=1)
 
         resource_pool_manager = self.init_resource_pool_mgr(config)
 
