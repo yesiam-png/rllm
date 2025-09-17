@@ -30,7 +30,7 @@ from verl.trainer.ppo.utils import need_critic, need_reference_policy
 from verl.utils.config import validate_config
 from verl.utils.device import is_cuda_available
 from verl.utils.import_utils import load_extern_type
-
+from verl.workers.reward_manager.prime import PrimeRewardManager
 
 from verl import DataProto
 from rllm.rewards.rl_reward import rllm_reward_fn
@@ -367,10 +367,10 @@ class TaskRunner:
       #  val_reward_fn = load_reward_manager(
       #      config, tokenizer, num_examine=1, **config.reward_model.get("reward_kwargs", {})
       #  )
-        reward_fn = RewardManager(tokenizer=tokenizer, num_examine=0)
+        reward_fn = PrimeRewardManager(tokenizer=tokenizer, num_examine=0, compute_score=rllm_reward_fn) #RewardManager(tokenizer=tokenizer, num_examine=0)
 
         # Note that we always use function-based RM for validation
-        val_reward_fn = RewardManager(tokenizer=tokenizer, num_examine=1)
+        val_reward_fn = PrimeRewardManager(tokenizer=tokenizer, num_examine=1, compute_score=rllm_reward_fn) #RewardManager(tokenizer=tokenizer, num_examine=1)
 
         resource_pool_manager = self.init_resource_pool_mgr(config)
 

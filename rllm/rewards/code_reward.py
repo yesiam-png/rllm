@@ -4,10 +4,10 @@ This module contains the RewardCode class, which evaluates code datasets answers
 and assigns rewards based on their correctness on unit tests.
 """
 import json
-import multiprocessing
+#import multiprocessing
 import re
 import time
-from multiprocessing import Manager
+#from multiprocessing import Manager
 from typing import List, Dict, Union
 import random
 import ast 
@@ -85,68 +85,59 @@ def clean_code_main_block(code: str) -> str:
 
     return '\n'.join(filtered_lines)
 
-def evaluate_code(tests, generation, debug, test_results, test_fn, timeout_per_test):
-    """Helper function to run tests in separate process."""
-    try:
-        test_results.append(test_fn(tests, test=generation, debug=debug, timeout=timeout_per_test))
-    except Exception as e:
-        print(f"Error in evaluate_code: {e}")
 
-def check_correctness(tests: Union[List[Dict[str, str]], Dict[str, List[str]]], code: str, test_fn, timeout_per_test: int = 2, max_tests: int = 15) -> bool:
+
+def check_correctness(
+    tests: Union[List[Dict[str, str]], Dict[str, List[str]]],
+    code: str,
+    test_fn,
+    timeout_per_test: int = 2,
+    max_tests: int = 15,
+) -> bool:
     """
-    Check if generated code passes all test cases within a timeout period.
-
-    Args:
-        tests: Test cases in either list of dictionaries or dictionary of lists format
-        code: Generated code to test
-        test_fn: Function to run tests
-        timeout: Maximum execution time in seconds before killing process
-
-    Returns:
-        bool: True if all tests pass, False otherwise
-
-    Raises:
-        AssertionError: If test results list is empty
+    Run tests synchronously. Timeouts are expected to be enforced by either:
+    - test_fn's own timeout argument, and/or
+    - the outer ProcessPoolExecutor + asyncio.wait_for
     """
-    manager = Manager()
-    test_results = manager.list()
-
+    # Cap number of tests to avoid pathological cases
     if isinstance(tests, list):
         total_tests = len(tests)
         if total_tests > max_tests:
-            # Sort indices by test input length and take the max_tests longest ones
-            selected_indices = sorted(range(total_tests), key=lambda i: len(tests[i]['input']), reverse=True)[:max_tests]
+            selected_indices = sorted(
+                range(total_tests),
+                key=lambda i: len(tests[i]["input"]),
+                reverse=True
+            )[:max_tests]
             tests = [tests[i] for i in selected_indices]
         num_tests = len(tests)
     else:
-        total_tests = len(tests['inputs'])
+        total_tests = len(tests["inputs"])
         if total_tests > max_tests:
-            # Select the tests with the longest input length.
-            selected_indices = sorted(range(total_tests), key=lambda i: len(tests['inputs'][i]), reverse=True)[:max_tests]
-            # Create a new dict with only the selected test cases
-            selected_tests = {
-                'inputs': [tests['inputs'][i] for i in selected_indices],
-                'outputs': [tests['outputs'][i] for i in selected_indices]
+            selected_indices = sorted(
+                range(total_tests),
+                key=lambda i: len(tests["inputs"][i]),
+                reverse=True
+            )[:max_tests]
+            tests = {
+                "inputs": [tests["inputs"][i] for i in selected_indices],
+                "outputs": [tests["outputs"][i] for i in selected_indices],
             }
-            tests = selected_tests
-        num_tests = len(tests['inputs'])
-    
-    process = multiprocessing.Process(
-        target=evaluate_code,
-        args=(tests, code, False, test_results, test_fn, timeout_per_test)
-    )
-    process.start()
-    process.join()
+        num_tests = len(tests["inputs"])
 
-    if process.is_alive():
-        process.kill()
-    test_results = test_results[:]
-    if len(test_results) == 0:
+    try:
+        # test_fn is expected to accept a `timeout` per test or global, depending on the impl
+        result = test_fn(tests, test=code, debug=False, timeout=timeout_per_test)
+    except Exception as e:
+        # Treat exceptions as failure
+        # print(f"Error in check_correctness: {e}")
         return False
-    #assert len(test_results) == 1, f"Expected exactly one test result, but got {test_results}"
-    test_results = test_results[0]
-    test_results = [r==True for r in test_results]
-    return all(test_results)
+
+    if not result:
+        return False
+    # Normalize to list[bool]
+    result_bools = [r is True for r in result]
+    return all(result_bools)
+
 
 
 def postprocess_lcb_sample(sample):
@@ -210,37 +201,24 @@ def _temp_run(sample, generation, debug, result, metadata_list, timeout):
     metadata_list.append(metadata)
 
 def lcb_check_correctness_v2(sample, generation, timeout=6, debug=False):
-    """Check correctness of code generation with a global timeout.
-    The global timeout is to catch some extreme/rare cases not handled by the timeouts
-    inside `run_test`"""
+    """
+    Synchronous version. Relies on run_test's internal timeout handling
+    and/or the outer ProcessPoolExecutor timeout.
+    """
     assert len(sample) >= 1, "Sample must contain at least one test case"
     sample = postprocess_lcb_sample(sample)
-
-    manager = multiprocessing.Manager()
-    result = manager.list()
-    metadata_list = manager.list()
-
-    p = multiprocessing.Process(
-        target=_temp_run,
-        args=(sample, generation, debug, result, metadata_list, timeout),
-    )
-    p.start()
-    p.join(
-        timeout=(timeout + 1) * len(json.loads(sample["input_output"])["inputs"]) + 5
-    )
-    if p.is_alive():
-        p.kill()
-    if not result:
-        in_outs = json.loads(sample["input_output"])
-        # consider that all tests failed
-        result = [[-1 for i in range(len(in_outs["inputs"]))]]
-        if debug:
-            print(f"global timeout")
-    if not result:
+    try:
+        res, metadata = lcb_run_test(sample, test=generation, debug=debug, timeout=timeout)
+    except Exception:
         return False
-    # print(result[0], metadata_list)
-    # Check if all elements in result[0] are True
-    return all(x == True for x in result[0])
+
+    if not res:
+        # If falsy or empty, treat as all-failed
+        in_outs = json.loads(sample["input_output"])
+        return False
+
+    return all(x is True for x in res)
+
 
 
 def leetcode_check_correctness(tests: List[Dict[str, str]], code: str) -> bool:

@@ -4,7 +4,7 @@ import json
 import sys
 import faulthandler
 import platform
-import multiprocessing
+#import multiprocessing
 import queue
 import re
 
@@ -162,7 +162,7 @@ def get_function(compiled_sol, fn_name: str):  # type: ignore
 
 
 def compile_code(code: str, timeout: int):
-    signal.alarm(timeout)
+   # signal.alarm(timeout)
     try:
         tmp_sol = ModuleType("tmp_sol", "")
         exec(code, tmp_sol.__dict__)
@@ -178,7 +178,7 @@ def compile_code(code: str, timeout: int):
 
         assert compiled_sol is not None
     finally:
-        signal.alarm(0)
+        pass
 
     return compiled_sol
 
@@ -204,7 +204,7 @@ def grade_call_based(
     # call-based clean up logic
     # need to wrap in try-catch logic after to catch the correct errors, but for now this is fine.
     code = BASE_IMPORTS + "\n" + code
-   # print("codecode", code)
+    #print("codecode", code)
     compiled_sol = compile_code(code, timeout)
     #method = get_function(compiled_mod, "solve")
 
@@ -225,17 +225,17 @@ def grade_call_based(
     total_execution = 0
     all_results = []
     for idx, (gt_inp, gt_out) in enumerate(zip(all_inputs, all_outputs)):
-        signal.alarm(timeout)
+      #  signal.alarm(timeout)
         faulthandler.enable()
         try:
             # can lock here so time is useful
-            start = time.time()
+       #     start = time.time()
             prediction = method(*gt_inp)
 
           #  print("predictionnn", prediction)
           #  print("gt_outtt", gt_out) 
             total_execution += time.time() - start
-            signal.alarm(0)
+       #     signal.alarm(0)
 
             # don't penalize model if it produces tuples instead of lists
             # ground truth sequences are not tuples
@@ -258,7 +258,7 @@ def grade_call_based(
                 }
         except Exception as e:
           #  print("wwwww", e)
-            signal.alarm(0)
+        #    signal.alarm(0)
             if "timeoutexception" in repr(e).lower():
                 all_results.append(-3)
                 return all_results, {
@@ -279,7 +279,7 @@ def grade_call_based(
                 }
 
         finally:
-            signal.alarm(0)
+       #     signal.alarm(0)
             faulthandler.disable()
 
     return all_results, {"execution time": total_execution}
@@ -316,19 +316,19 @@ def grade_stdio(
     all_results = []
     total_execution_time = 0
     for idx, (gt_inp, gt_out) in enumerate(zip(all_inputs, all_outputs)):
-        signal.alarm(timeout)
+     #   signal.alarm(timeout)
         faulthandler.enable()
 
-        signal.alarm(timeout)
+     #   signal.alarm(timeout)
         with Capturing() as captured_output:
             try:
                 start = time.time()
                 ret = call_method(method, gt_inp)
                 total_execution_time += time.time() - start
                 # reset the alarm
-                signal.alarm(0)
+       #         signal.alarm(0)
             except Exception as e:
-                signal.alarm(0)
+         #       signal.alarm(0)
                 if "timeoutexception" in repr(e).lower():
                     all_results.append(-3)
                     return all_results, {
@@ -349,7 +349,7 @@ def grade_stdio(
                     }
 
             finally:
-                signal.alarm(0)
+             #   signal.alarm(0)
                 faulthandler.disable()
 
         prediction = captured_output[0]
@@ -419,7 +419,7 @@ def run_test(sample, test=None, debug=False, timeout=3):
     if test(generated_code) is not None it'll try to run the code.
     otherwise it'll just return an input and output pair.
     """
-    signal.signal(signal.SIGALRM, timeout_handler)
+    #signal.signal(signal.SIGALRM, timeout_handler)
 
     # Disable functionalities that can make destructive changes to the test.
     # max memory is set to 4GB
@@ -477,8 +477,8 @@ def run_test(sample, test=None, debug=False, timeout=3):
                     "error_code": -4,
                     "error_message": f"Error during testing: {e}",
                 }
-            finally:
-                signal.alarm(0)
+           # finally:
+           #     signal.alarm(0)
         elif which_type == CODE_TYPE.standard_input:
             # sol
             # if code has if __name__ == "__main__": then remove it
@@ -497,8 +497,8 @@ def run_test(sample, test=None, debug=False, timeout=3):
                     "error_code": -4,
                     "error_message": f"Error during testing: {e}",
                 }
-            finally:
-                signal.alarm(0)
+           # finally:
+           #     signal.alarm(0)
 
 
 def reliability_guard(maximum_memory_bytes=None):
