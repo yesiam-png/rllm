@@ -30,8 +30,8 @@ if [[ -z "${MODEL_PATH:-}" ]]; then
     MODEL_PATH="/mnt/task_wrapper/60-400-codegemma-10warmup-nopenalty-log-002lenpenalty-2sync_step900"
 fi
 
-PROJECT='rlvr-sep14'
-EXPERIMENT='rl-60-400-codegemma-10warmup-nopenalty-log-002lenpenalty-2sync_step900-2048-areal-temp0-correct'
+PROJECT='rlvr-sep15'
+EXPERIMENT='rl-60-400-codegemma-10warmup-nopenalty-log-002lenpenalty-2sync_step900-2048-areal-temp0-naive'
 
 # -------- First-run marker controls val_before_train --------
 STATE_DIR="$HOME/.cache/verl_run_state"
@@ -92,7 +92,7 @@ trainer.critic_warmup=0 \
 trainer.logger="['console','wandb']" \
 trainer.project_name="$PROJECT" \
 trainer.experiment_name="$EXPERIMENT" \
-"$VAL_FLAG" \
+trainer.val_before_train=True \
 trainer.n_gpus_per_node=8 \
 trainer.nnodes=1 \
 trainer.save_freq=10 \
