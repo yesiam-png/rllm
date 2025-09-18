@@ -830,6 +830,8 @@ class RayPPOTrainer:
                     text=True,
                     check=False,
                 )
+            except Exception as e:
+                print(f"Unexpected error during S3 upload of resume checkpoint. Error: {e}")
             try:
                 # Equivalent to: aws s3 cp <dir> s3://.../<dir> --recursive
                 result = subprocess.run(
