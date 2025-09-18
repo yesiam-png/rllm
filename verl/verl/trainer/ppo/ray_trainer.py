@@ -818,7 +818,18 @@ class RayPPOTrainer:
             old_local_global_step_folder = os.path.join(
                 self.config.trainer.default_local_dir, f"global_step_{self.global_steps - 2 * self.config.trainer.save_freq}"
             )
-
+            resume_dest = f"{s3_base_uri}/{self.config.trainer.experiment_name}/resume/global_step_{self.global_steps}"
+            resume_local_global_step_folder = os.path.join(
+                self.config.trainer.default_local_dir, f"global_step_{self.global_steps}"
+            )
+            try:
+                # Equivalent to: aws s3 cp <dir> s3://.../<dir> --recursive
+                result = subprocess.run(
+                    ["aws", "s3", "cp", resume_local_global_step_folder, resume_dest, "--recursive"],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
             try:
                 # Equivalent to: aws s3 cp <dir> s3://.../<dir> --recursive
                 result = subprocess.run(
