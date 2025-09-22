@@ -3,7 +3,7 @@
 # - Runs two val modes per task:
 #     1) deterministic: do_sample=False, temperature=0.00, n=1
 #     2) sample5:      do_sample=True,  temperature=0.6,  n=5
-# - Uses 8 workers, each pinned to a different GPU (0..7)
+# - Uses 2 GPUs per task (tensor-parallel), 4 tasks at once: GPU pairs (0,1) (2,3) (4,5) (6,7)
 # - Writes logs under ./eval_logs/<timestamp>/L{len}/{mode}/gs_{step}.log
 # - After runs, calls parse_eval_logs.py to print a summary table (+ CSV)
 
@@ -14,28 +14,31 @@ set -Eeuo pipefail
 ##############################
 
 # Baseline path from your script (parent dir that contains global_step_10, _20, ... _300)
-DEFAULT_MODEL_PATH="/mnt/task_wrapper/rl-40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400-areal-1024-temp0/global_step_10"
+DEFAULT_MODEL_PATH="/mnt/task_wrapper/rl-60-400-codegemma-10warmup-nopenalty-log-002lenpenalty-2sync_step900-2048-areal-temp0-naive/global_step_10"
 CHECKPOINT_PARENT="$(dirname "$DEFAULT_MODEL_PATH")"
 
 PROJECT='rlvr-sep12-evalonly'
-EXPERIMENT='rl-40-400-qwen-10warmup-5penalty-log-005lenpenalty-3sync_step2400-areal-1024-temp0'
+EXPERIMENT='rl-60-400-codegemma-10warmup-nopenalty-log-002lenpenalty-2sync_step900-2048-areal-temp0-naive'
 
 # Prompt-length settings to test (we also mirror response_length to match your prior script)
 LENGTHS=(1024 2048)
 
 # Evaluate these checkpoints:
-START=0
+START=10
 END=320
-STEP=10
+STEP=40
 
-# GPUs: one job per GPU, 8 workers total
-NUM_WORKERS=8   # expects GPUs 0..7
+# ===== Concurrency & GPU topology (UPDATED) =====
+# Two GPUs per task, 4 tasks at a time -> uses all 8 GPUs in pairs below.
+NUM_GPUS_PER_TASK=2
+GPU_GROUPS=("0,1" "2,3" "4,5" "6,7")  # adjust if your topology differs
+NUM_PARALLEL_TASKS=${#GPU_GROUPS[@]}
 
 # Extra args (optional) appended verbatim to the Python call (e.g., override val files)
 EXTRA_ARGS=()
 
 # Validation modes
-VAL_MODES=(deterministic sample5)
+VAL_MODES=(deterministic)
 
 ##############################
 # ---- ENV & PREP ---------  #
@@ -51,7 +54,8 @@ mkdir -p "${LOG_ROOT}"
 echo "[INFO] Logs -> ${LOG_ROOT}"
 echo "[INFO] Checkpoint parent: ${CHECKPOINT_PARENT}"
 echo "[INFO] Project/Experiment: ${PROJECT} / ${EXPERIMENT}"
-echo "[INFO] GPUs/workers: ${NUM_WORKERS} (expects CUDA_VISIBLE_DEVICES 0..$((NUM_WORKERS-1)))"
+echo "[INFO] GPUs per task: ${NUM_GPUS_PER_TASK}"
+echo "[INFO] Tasks in parallel: ${NUM_PARALLEL_TASKS} (GPU groups: ${GPU_GROUPS[*]})"
 echo "[INFO] Val modes: ${VAL_MODES[*]}"
 echo
 
@@ -60,9 +64,10 @@ echo
 ##############################
 
 run_one() {
-  local gpu="$1" step="$2" L="$3" mode="$4"
+  local gpu_set="$1" step="$2" L="$3" mode="$4"
 
-  export CUDA_VISIBLE_DEVICES="${gpu}"
+  # Make only the GPUs in this group visible to the process
+  export CUDA_VISIBLE_DEVICES="${gpu_set}"
 
   local model_path="${CHECKPOINT_PARENT}/global_step_${step}"
   local log_dir="${LOG_ROOT}/L${L}/${mode}"
@@ -74,70 +79,71 @@ run_one() {
   case "${mode}" in
     deterministic) VK_DO_SAMPLE=False; VK_TEMP=0.00; VK_N=1 ;;
     sample5)       VK_DO_SAMPLE=True;  VK_TEMP=0.6;  VK_N=5 ;;
-    *) echo "[GPU ${gpu}] Unknown mode: ${mode}" >&2; return 2 ;;
+    *) echo "[GPU ${gpu_set}] Unknown mode: ${mode}" >&2; return 2 ;;
   esac
 
-  echo "[GPU ${gpu}] step=${step}, L=${L}, mode=${mode} (do_sample=${VK_DO_SAMPLE}, T=${VK_TEMP}, n=${VK_N})"
+  echo "[GPU ${gpu_set}] step=${step}, L=${L}, mode=${mode} (do_sample=${VK_DO_SAMPLE}, T=${VK_TEMP}, n=${VK_N})"
 
   # --- Eval-only run (mirrors your hyperparams; val_before_train=True, total_epochs=0) ---
   # Note: We set both max_prompt_length and max_response_length to L to match your prior script.
   # If you intend to only change prompt length, remove the response_length line.
-  python3 -u -m verl.trainer.main_ppo \
-    algorithm.adv_estimator=grpo \
-    data.train_files="$HOME/rllm/data/deepcoder_train.parquet" \
-    data.val_files="[$HOME/rllm/data/test_codeforces.parquet,$HOME/rllm/data/test_livecodebench.parquet,$HOME/rllm/data/val_areal.parquet]" \
-    data.train_batch_size=128 \
-    data.val_batch_size=512 \
-    data.max_prompt_length="${L}" \
-    data.max_response_length=1024 \
-    actor_rollout_ref.model.path="${model_path}" \
-    actor_rollout_ref.model.use_remove_padding=True \
-    actor_rollout_ref.model.enable_gradient_checkpointing=True \
-    actor_rollout_ref.actor.optim.lr=1e-6 \
-    actor_rollout_ref.actor.ppo_mini_batch_size=64 \
-    actor_rollout_ref.actor.ppo_micro_batch_size=16 \
-    actor_rollout_ref.actor.ppo_epochs=1 \
-    actor_rollout_ref.actor.use_dynamic_bsz=True \
-    actor_rollout_ref.actor.ppo_max_token_len_per_gpu=32000 \
-    actor_rollout_ref.actor.use_kl_loss=False \
-    actor_rollout_ref.actor.kl_loss_coef=0 \
-    actor_rollout_ref.actor.kl_loss_type=low_var_kl \
-    actor_rollout_ref.actor.ulysses_sequence_parallel_size=1 \
-    actor_rollout_ref.actor.entropy_coeff=0 \
-    actor_rollout_ref.actor.grad_clip=1.0 \
-    actor_rollout_ref.actor.clip_ratio_low=0.2 \
-    actor_rollout_ref.actor.clip_ratio_high=0.28 \
-    actor_rollout_ref.actor.fsdp_config.param_offload=False \
-    actor_rollout_ref.actor.fsdp_config.optimizer_offload=False \
-    actor_rollout_ref.rollout.tensor_model_parallel_size=1 \
-    actor_rollout_ref.rollout.name=vllm \
-    actor_rollout_ref.rollout.temperature=0.6 \
-    actor_rollout_ref.rollout.val_kwargs.do_sample=${VK_DO_SAMPLE} \
-    actor_rollout_ref.rollout.val_kwargs.temperature=${VK_TEMP} \
-    actor_rollout_ref.rollout.val_kwargs.n=${VK_N} \
-    actor_rollout_ref.rollout.gpu_memory_utilization=0.8 \
-    actor_rollout_ref.rollout.n=4 \
-    actor_rollout_ref.ref.fsdp_config.param_offload=True \
-    algorithm.kl_ctrl.kl_coef=0.001 \
-    trainer.critic_warmup=0 \
-    trainer.logger="['console']" \
-    trainer.project_name="${PROJECT}" \
-    trainer.experiment_name="${EXPERIMENT}-eval-gs${step}-L${L}-${mode}" \
-    trainer.val_before_train=True \
-    trainer.n_gpus_per_node=1 \
-    trainer.nnodes=1 \
-    trainer.save_freq=0 \
-    trainer.test_freq=1 \
-    trainer.default_hdfs_dir=null \
-    trainer.total_epochs=0 \
-    "${EXTRA_ARGS[@]}" \
-    > "${log_file}" 2>&1
+python3 -u -m verl.trainer.main_ppo \
+  algorithm.adv_estimator=grpo \
+  data.train_files=${HOME}/rllm/data/deepcoder_train.parquet \
+  data.val_files=[${HOME}/rllm/data/test_codeforces.parquet,${HOME}/rllm/data/test_livecodebench.parquet,${HOME}/rllm/data/val_areal.parquet] \
+  data.train_batch_size=128 \
+  data.val_batch_size=512 \
+  data.max_prompt_length=${L} \
+  data.max_response_length=1024 \
+  actor_rollout_ref.model.path=${model_path} \
+  actor_rollout_ref.model.use_remove_padding=True \
+  actor_rollout_ref.model.enable_gradient_checkpointing=True \
+  actor_rollout_ref.actor.optim.lr=1e-6 \
+  actor_rollout_ref.actor.ppo_mini_batch_size=64 \
+  actor_rollout_ref.actor.ppo_micro_batch_size=16 \
+  actor_rollout_ref.actor.ppo_epochs=1 \
+  actor_rollout_ref.actor.use_dynamic_bsz=True \
+  actor_rollout_ref.actor.ppo_max_token_len_per_gpu=6000 \
+  actor_rollout_ref.actor.use_kl_loss=False \
+  actor_rollout_ref.actor.kl_loss_coef=0 \
+  actor_rollout_ref.actor.kl_loss_type=low_var_kl \
+  actor_rollout_ref.actor.ulysses_sequence_parallel_size=1 \
+  actor_rollout_ref.actor.entropy_coeff=0 \
+  actor_rollout_ref.actor.grad_clip=1.0 \
+  actor_rollout_ref.actor.clip_ratio_low=0.2 \
+  actor_rollout_ref.actor.clip_ratio_high=0.28 \
+  actor_rollout_ref.actor.fsdp_config.param_offload=False \
+  actor_rollout_ref.actor.fsdp_config.optimizer_offload=False \
+  actor_rollout_ref.rollout.tensor_model_parallel_size=1 \
+  actor_rollout_ref.rollout.name=vllm \
+  actor_rollout_ref.rollout.temperature=0.6 \
+  actor_rollout_ref.rollout.val_kwargs.do_sample=${VK_DO_SAMPLE} \
+  actor_rollout_ref.rollout.val_kwargs.temperature=${VK_TEMP} \
+  actor_rollout_ref.rollout.val_kwargs.n=${VK_N} \
+  actor_rollout_ref.rollout.gpu_memory_utilization=0.6 \
+  actor_rollout_ref.rollout.n=4 \
+  actor_rollout_ref.ref.fsdp_config.param_offload=True \
+  algorithm.kl_ctrl.kl_coef=0.001 \
+  trainer.critic_warmup=0 \
+  trainer.logger=[console] \
+  trainer.project_name=${PROJECT} \
+  trainer.experiment_name=${EXPERIMENT}-eval-gs${step}-L${L}-${mode} \
+  trainer.val_before_train=True \
+  trainer.n_gpus_per_node=2 \
+  trainer.nnodes=1 \
+  trainer.save_freq=0 \
+  trainer.test_freq=1 \
+  trainer.default_hdfs_dir=null \
+  trainer.total_epochs=0 \
+  "${EXTRA_ARGS[@]}" \
+  > "${log_file}" 2>&1
+
 
   local rc=$?
   if [[ $rc -eq 0 ]]; then
-    echo "[GPU ${gpu}] ✅ Done step=${step}, L=${L}, mode=${mode}"
+    echo "[GPU ${gpu_set}] ✅ Done step=${step}, L=${L}, mode=${mode}"
   else
-    echo "[GPU ${gpu}] ❌ FAILED step=${step}, L=${L}, mode=${mode} (rc=${rc}) — see ${log_file}" >&2
+    echo "[GPU ${gpu_set}] ❌ FAILED step=${step}, L=${L}, mode=${mode} (rc=${rc}) — see ${log_file}" >&2
   fi
   return $rc
 }
@@ -165,12 +171,11 @@ TOTAL_TASKS=$(wc -l < "${TASKS_FILE}")
 echo "[INFO] Total tasks: ${TOTAL_TASKS}"
 echo
 
-
 ##############################
 # ---- START WORKERS ------- #
 ##############################
 
-# Token queue: one token per GPU id (0..NUM_WORKERS-1)
+# Token queue: one token per GPU group (each token is a comma-separated list of device IDs)
 GPUQ="$(mktemp -u)"
 mkfifo "$GPUQ"
 # Clean up FIFO and task file on exit
@@ -179,9 +184,9 @@ trap 'exec 3>&- 3<&- 2>/dev/null; rm -f "$GPUQ" "$TASKS_FILE"' EXIT
 # Open the FIFO for both reading and writing in the parent so writers never block
 exec 3<>"$GPUQ"
 
-# Seed tokens (one per GPU)
-for (( g=0; g<NUM_WORKERS; g++ )); do
-  printf '%s\n' "$g" >&3
+# Seed tokens (one per GPU group)
+for grp in "${GPU_GROUPS[@]}"; do
+  printf '%s\n' "$grp" >&3
 done
 
 pids=()
@@ -191,15 +196,14 @@ failures=0
 while IFS=' ' read -r step L mode; do
   [[ -z "${step:-}" || -z "${L:-}" || -z "${mode:-}" ]] && continue
 
-  # Wait for an available GPU token
-  read -r gpu <&3
+  # Wait for an available GPU group token
+  read -r gpu_set <&3
 
   (
-    # run_one takes care of export CUDA_VISIBLE_DEVICES="$gpu"
-    run_one "$gpu" "$step" "$L" "$mode"
+    run_one "$gpu_set" "$step" "$L" "$mode"
     rc=$?
-    # Return the GPU token
-    printf '%s\n' "$gpu" >&3
+    # Return the GPU group token
+    printf '%s\n' "$gpu_set" >&3
     exit "$rc"
   ) &
   pids+=($!)

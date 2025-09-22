@@ -24,18 +24,14 @@ from rllm.rewards.reward_types import RewardConfig, RewardFn, RewardInput, Rewar
 
 from typing import Iterable
 
-def trim_after_stop(text: str, stop_words: Iterable[str], window: int = 25) -> str:
-    """Remove everything after the first stop word that appears within the last
-    `window` characters of `text`. If none found, return the original text."""
-    start = max(len(text) - window, 0)
-
+def trim_after_stop(text, stop_words):
     cut_idx = None
     for s in stop_words:
-        i = text.find(s, start)  # search only in the last `window` chars
+        i = text.find(s)
         if i != -1 and (cut_idx is None or i < cut_idx):
             cut_idx = i
-
     return text[:cut_idx] if cut_idx is not None else text
+
 
 def extract_code_from_model(model_response: str, response_only: str):
     """
@@ -47,10 +43,9 @@ def extract_code_from_model(model_response: str, response_only: str):
     Returns:
         str: The extracted code, or an empty string if no code block is found.
     """
-    stop=["\nclass", "\nassert", '\n"""', "\nprint", "\nif", "\n<|/", "\n```", "\n#", "\ndef", "\nfor", "\nwhile", "\n@", "\nExample", "\n-", "\n```", "\nsolve", "<|endoftext|>", "<|end_of_text|>"]
+    stop=["\nclass", "\nassert", '\n"""', "\nprint", "\nif", "\n<|/", "\n```", "\n#", "\ndef", "\nfor", "\nwhile", "\n@", "\nExample", "\n-", "\n```", "\nsolve", "<|endoftext|>", "<|end_of_text|>", "<eos>"]
     #print("response_only", response_only)
     response_only = trim_after_stop(response_only, stop)
-
    # print("afterremove", response_only)
    # if '\nsolve()' not in response_only:
    #     response_only += '\nsolve()'
