@@ -806,7 +806,7 @@ class RayPPOTrainer:
         with open(local_latest_checkpointed_iteration, "w") as f:
             f.write(str(self.global_steps))
 
-        if ("codegemma" in self.config.actor_rollout_ref.model.path) and self.global_steps > 25:
+        if ("codegemma" in self.config.actor_rollout_ref.model.path or "lama" in self.config.actor_rollout_ref.model.path) and self.global_steps > 25:
             # --- NEW: upload the just-saved checkpoint dir to S3 and delete local copy ---
             # You can override this in your config: self.config.trainer.s3_base_uri
             s3_base_uri = getattr(
